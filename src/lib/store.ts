@@ -60,8 +60,10 @@ export type Session = {
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
 export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 export type WorkoutPlan = { id: string; name: string; items: PlanItem[]; difficulty?: Difficulty };
+export type GardenId = "wild-meadow" | "moon-orchard" | "glasshouse";
 export type State = {
   flower: string;
+  mainGarden: GardenId;
   sessions: Session[];
   plan: Record<number, PlanItem[]>;
   plans: WorkoutPlan[];
@@ -116,6 +118,7 @@ const SAMPLE_SESSIONS: Session[] = [
 ];
 const DEFAULT: State = {
   flower: "🌷",
+  mainGarden: "wild-meadow",
   sessions: SAMPLE_SESSIONS,
   active: null,
   plans: [STARTER_PLAN, ...EXTRA_PLANS],

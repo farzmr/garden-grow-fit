@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExercisesRouteImport } from './routes/exercises'
+import { Route as GardensRouteImport } from './routes/gardens'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as StartRouteImport } from './routes/start'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const ExercisesRoute = ExercisesRouteImport.update({
   id: '/exercises',
   path: '/exercises',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GardensRoute = GardensRouteImport.update({
+  id: '/gardens',
+  path: '/gardens',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -56,6 +62,7 @@ const ExerciseNameRoute = ExerciseNameRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/exercises': typeof ExercisesRoute
+  '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
   '/start': typeof StartRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exercises': typeof ExercisesRoute
+  '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
   '/start': typeof StartRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/exercises': typeof ExercisesRoute
+  '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
   '/start': typeof StartRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/exercises'
+    | '/gardens'
     | '/history'
     | '/plan'
     | '/start'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/exercises'
+    | '/gardens'
     | '/history'
     | '/plan'
     | '/start'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/exercises'
+    | '/gardens'
     | '/history'
     | '/plan'
     | '/start'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExercisesRoute: typeof ExercisesRoute
+  GardensRoute: typeof GardensRoute
   HistoryRoute: typeof HistoryRoute
   PlanRoute: typeof PlanRoute
   StartRoute: typeof StartRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/exercises'
       fullPath: '/exercises'
       preLoaderRoute: typeof ExercisesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gardens': {
+      id: '/gardens'
+      path: '/gardens'
+      fullPath: '/gardens'
+      preLoaderRoute: typeof GardensRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExercisesRoute: ExercisesRoute,
+  GardensRoute: GardensRoute,
   HistoryRoute: HistoryRoute,
   PlanRoute: PlanRoute,
   StartRoute: StartRoute,
