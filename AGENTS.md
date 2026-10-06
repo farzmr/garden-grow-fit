@@ -16,3 +16,4 @@
 - Persist optional plan IDs and names on completed sessions and migrate additional starter routines once in the existing versioned store; this tracks usage without losing logs or restoring deleted routines.
 - Render session details as an inline region below the History calendar; this keeps date context visible without a modal overlay.
 - Use a bundled dimensional garden illustration with interactive session flowers over the lawn; this provides visual depth without a heavy 3D runtime on phones.
+- Keep the three garden environments as bundled bespoke artwork and persist which one Home displays; this makes garden choice personal without adding a heavy graphics runtime.

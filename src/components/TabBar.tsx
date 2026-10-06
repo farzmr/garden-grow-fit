@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Flower2, ClipboardList, History, Play, Dumbbell } from "lucide-react";
+import { House, ClipboardList, History, Trees, Dumbbell } from "lucide-react";
 
 const tabs = [
-  { to: "/", label: "Garden", icon: Flower2 },
-  { to: "/start", label: "Start", icon: Play },
+  { to: "/gardens", label: "Gardens", icon: Trees },
   { to: "/plan", label: "Plans", icon: ClipboardList },
+  { to: "/", label: "Home", icon: House },
   { to: "/history", label: "History", icon: History },
   { to: "/exercises", label: "Exercises", icon: Dumbbell },
 ] as const;
