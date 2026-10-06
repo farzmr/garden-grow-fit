@@ -53,6 +53,7 @@ export type Session = {
   completedAt?: string;
   exercises: Exercise[];
   flower: string;
+  sample?: boolean;
 };
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
 export type WorkoutPlan = { id: string; name: string; items: PlanItem[] };
@@ -86,9 +87,25 @@ const STARTER_PLAN: WorkoutPlan = {
     p("Elliptical", 1, 5, 0),
   ],
 };
+const SAMPLE_SESSIONS: Session[] = [
+  {
+    id: "sample-session-1", date: "2026-09-28", completedAt: "2026-09-28T17:45:00", activity: "Workout", minutes: 52, flower: "🌷", sample: true,
+    exercises: [
+      { id:"sample-squat-1", name:"Back Squat", sets:[{weight:20,reps:10,done:true},{weight:25,reps:8,done:true},{weight:25,reps:8,done:true}] },
+      { id:"sample-bench-1", name:"Bench Press", sets:[{weight:15,reps:8,done:true},{weight:17.5,reps:7,done:true},{weight:17.5,reps:7,done:true}] },
+    ],
+  },
+  {
+    id: "sample-session-2", date: "2026-10-03", completedAt: "2026-10-03T10:20:00", activity: "Workout", minutes: 48, flower: "🌸", sample: true,
+    exercises: [
+      { id:"sample-squat-2", name:"Back Squat", sets:[{weight:25,reps:10,done:true},{weight:30,reps:8,done:true},{weight:30,reps:8,done:true}] },
+      { id:"sample-bench-2", name:"Bench Press", sets:[{weight:17.5,reps:8,done:true},{weight:20,reps:7,done:true},{weight:20,reps:6,done:true}] },
+    ],
+  },
+];
 const DEFAULT: State = {
   flower: "🌷",
-  sessions: [],
+  sessions: SAMPLE_SESSIONS,
   active: null,
   plans: [STARTER_PLAN],
   plan: {
