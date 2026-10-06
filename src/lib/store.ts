@@ -55,20 +55,42 @@ export type Session = {
   flower: string;
 };
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
+export type WorkoutPlan = { id: string; name: string; items: PlanItem[] };
 export type State = {
   flower: string;
   sessions: Session[];
   plan: Record<number, PlanItem[]>;
+  plans: WorkoutPlan[];
   active: Exercise[] | null;
   activeStartedAt?: string | undefined;
   activeFlower?: string | undefined;
+  activePlanName?: string | undefined;
 };
 
 const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
+const STARTER_PLAN: WorkoutPlan = {
+  id: "oct-17-full-body",
+  name: "Full body · Oct 17 routine",
+  items: [
+    p("Back Squat", 3, 10, 0),
+    p("Bench Press", 3, 7, 0),
+    p("Incline Leg Press", 3, 8, 20),
+    p("Lat Pulldown", 3, 10, 30),
+    p("Leg Extension", 3, 10, 11),
+    p("Lat Pulldown Machine", 3, 8, 11),
+    p("Chest Press Machine", 3, 8, 0),
+    p("Hip Adduction", 3, 10, 0),
+    p("Hip Abduction", 3, 10, 0),
+    p("Back Extension", 2, 10, 0),
+    p("StairMaster", 1, 3, 0),
+    p("Elliptical", 1, 5, 0),
+  ],
+};
 const DEFAULT: State = {
   flower: "🌷",
   sessions: [],
   active: null,
+  plans: [STARTER_PLAN],
   plan: {
     0: [],
     1: [p("Back Squat", 4, 8, 30), p("Walking Lunge", 3, 12, 6), p("Glute Bridge", 3, 15, 20)],
@@ -90,7 +112,10 @@ function load() {
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) state = { ...DEFAULT, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<State>;
+      state = { ...DEFAULT, ...saved, plans: saved.plans?.length ? saved.plans : DEFAULT.plans };
+    }
   } catch {}
 }
 export function setState(fn: (s: State) => State) {

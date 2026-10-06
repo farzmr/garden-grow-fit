@@ -10,3 +10,4 @@
 - [ ] Add two sample training records to Exercises.
 - [ ] Replace History’s feed with a calendar and detailed session events.
 - [ ] Verify plan editing, workout start, calendar details, and mobile layout.
+- [ ] Confirm the live preview visibly shows “Start,” side-by-side Resume/Cancel, and no daily summary.
