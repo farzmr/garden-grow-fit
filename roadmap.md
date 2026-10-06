@@ -4,3 +4,10 @@
 - [x] Show recent activity with date/time and pending workout resume/cancel.
 - [x] Add exercise catalogue with individual weight history and line charts.
 - [x] Verify the full start/resume/finish/history flow.
+- [x] Make Home Start permanent, simplify pending-workout actions, and remove today’s plan preview.
+- [x] Replace day-based planning with reusable workout plans based on the uploaded routine.
+- [x] Let Workout selection choose an existing plan before beginning.
+- [x] Add two sample training records to Exercises.
+- [x] Replace History’s feed with a calendar and detailed session events.
+- [x] Verify plan editing, workout start, calendar details, and mobile layout.
+- [x] Confirm the live preview visibly shows “Start,” side-by-side Resume/Cancel, and no daily summary.

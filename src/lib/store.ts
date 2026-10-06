@@ -53,22 +53,61 @@ export type Session = {
   completedAt?: string;
   exercises: Exercise[];
   flower: string;
+  sample?: boolean;
 };
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
+export type WorkoutPlan = { id: string; name: string; items: PlanItem[] };
 export type State = {
   flower: string;
   sessions: Session[];
   plan: Record<number, PlanItem[]>;
+  plans: WorkoutPlan[];
   active: Exercise[] | null;
   activeStartedAt?: string | undefined;
   activeFlower?: string | undefined;
+  activePlanName?: string | undefined;
 };
 
 const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
+const STARTER_PLAN: WorkoutPlan = {
+  id: "oct-17-full-body",
+  name: "Full body · Oct 17 routine",
+  items: [
+    p("Back Squat", 3, 10, 0),
+    p("Bench Press", 3, 7, 0),
+    p("Incline Leg Press", 3, 8, 20),
+    p("Lat Pulldown", 3, 10, 30),
+    p("Leg Extension", 3, 10, 11),
+    p("Lat Pulldown Machine", 3, 8, 11),
+    p("Chest Press Machine", 3, 8, 0),
+    p("Hip Adduction", 3, 10, 0),
+    p("Hip Abduction", 3, 10, 0),
+    p("Back Extension", 2, 10, 0),
+    p("StairMaster", 1, 3, 0),
+    p("Elliptical", 1, 5, 0),
+  ],
+};
+const SAMPLE_SESSIONS: Session[] = [
+  {
+    id: "sample-session-1", date: "2026-09-28", completedAt: "2026-09-28T17:45:00", activity: "Workout", minutes: 52, flower: "🌷", sample: true,
+    exercises: [
+      { id:"sample-squat-1", name:"Back Squat", sets:[{weight:20,reps:10,done:true},{weight:25,reps:8,done:true},{weight:25,reps:8,done:true}] },
+      { id:"sample-bench-1", name:"Bench Press", sets:[{weight:15,reps:8,done:true},{weight:17.5,reps:7,done:true},{weight:17.5,reps:7,done:true}] },
+    ],
+  },
+  {
+    id: "sample-session-2", date: "2026-10-03", completedAt: "2026-10-03T10:20:00", activity: "Workout", minutes: 48, flower: "🌸", sample: true,
+    exercises: [
+      { id:"sample-squat-2", name:"Back Squat", sets:[{weight:25,reps:10,done:true},{weight:30,reps:8,done:true},{weight:30,reps:8,done:true}] },
+      { id:"sample-bench-2", name:"Bench Press", sets:[{weight:17.5,reps:8,done:true},{weight:20,reps:7,done:true},{weight:20,reps:6,done:true}] },
+    ],
+  },
+];
 const DEFAULT: State = {
   flower: "🌷",
-  sessions: [],
+  sessions: SAMPLE_SESSIONS,
   active: null,
+  plans: [STARTER_PLAN],
   plan: {
     0: [],
     1: [p("Back Squat", 4, 8, 30), p("Walking Lunge", 3, 12, 6), p("Glute Bridge", 3, 15, 20)],
@@ -90,7 +129,10 @@ function load() {
   loaded = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) state = { ...DEFAULT, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = JSON.parse(raw) as Partial<State>;
+      state = { ...DEFAULT, ...saved, plans: saved.plans?.length ? saved.plans : DEFAULT.plans };
+    }
   } catch {}
 }
 export function setState(fn: (s: State) => State) {

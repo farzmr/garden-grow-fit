@@ -1,64 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
-import { DAYS, EXERCISE_LIBRARY, setState, useStore, type PlanItem } from "@/lib/store";
+import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EXERCISE_LIBRARY, setState, uid, useStore, type WorkoutPlan } from "@/lib/store";
 
 export const Route = createFileRoute("/plan")({
-  head: () => ({
-    meta: [
-      { title: "Weekly plan — Bloom" },
-      { name: "description", content: "Set which exercises you do on each day of the week." },
-      { property: "og:title", content: "Weekly plan — Bloom" },
-      { property: "og:description", content: "Your training plan for every day." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Plan,
+  head: () => ({ meta: [
+    { title: "Workout plans — Bloom" },
+    { name: "description", content: "Create and edit reusable workout routines." },
+    { property: "og:title", content: "Workout plans — Bloom" },
+    { property: "og:description", content: "Your reusable gym plans and exercises." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
+  component: Plans,
 });
 
-function Plan() {
+function Plans() {
   const s = useStore();
-  const [day, setDay] = useState(new Date().getDay());
-  const items = s.plan[day] ?? [];
-  const save = (next: PlanItem[]) => setState((x) => ({ ...x, plan: { ...x.plan, [day]: next } }));
+  const [selected, setSelected] = useState<string | null>(null);
+  const current = s.plans.find(plan => plan.id === selected);
+  const save = (plan: WorkoutPlan) => setState(x => ({...x, plans:x.plans.map(p => p.id === plan.id ? plan : p)}));
+  const createPlan = () => {
+    const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[] };
+    setState(x => ({...x, plans:[...x.plans, plan]}));
+    setSelected(plan.id);
+  };
 
-  return (
-    <div className="space-y-5 px-5 pt-10">
-      <h1 className="font-display text-4xl">Weekly plan</h1>
-      <div className="flex gap-1 overflow-x-auto">
-        {DAYS.map((d, i) => (
-          <button key={d} onClick={() => setDay(i)} className={`flex-1 rounded-xl py-2 text-sm ${day === i ? "bg-primary text-primary-foreground" : "bg-card"}`}>
-            {d}
-            <span className="block text-[10px] opacity-70">{(s.plan[i] ?? []).length || "rest"}</span>
-          </button>
-        ))}
-      </div>
-      {items.length === 0 && <p className="text-center text-sm text-muted-foreground">Rest day — add exercises below.</p>}
-      {items.map((it, idx) => (
-        <div key={idx} className="space-y-2 rounded-3xl bg-card p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <p className="font-semibold">{it.name}</p>
-            <button aria-label="Remove" onClick={() => save(items.filter((_, j) => j !== idx))} className="text-muted-foreground"><Trash2 className="h-4 w-4" /></button>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-            {(["sets", "reps", "weight"] as const).map((k) => (
-              <label key={k} className="space-y-1">
-                <span className="capitalize">{k === "weight" ? "kg" : k}</span>
-                <input type="number" value={it[k]} onChange={(e) => save(items.map((z, j) => (j === idx ? { ...z, [k]: +e.target.value } : z)))} className="w-full rounded-lg border border-input bg-background px-2 py-1.5 text-center text-sm text-foreground" />
-              </label>
-            ))}
-          </div>
-        </div>
-      ))}
-      <select
-        value=""
-        onChange={(e) => e.target.value && save([...items, { name: e.target.value, sets: 3, reps: 10, weight: 10 }])}
-        className="w-full rounded-2xl border border-input bg-card px-4 py-3"
-      >
-        <option value="">+ Add exercise to {DAYS[day]}</option>
-        {EXERCISE_LIBRARY.map((e) => <option key={e.name}>{e.name}</option>)}
-      </select>
-    </div>
-  );
+  if (current) return <div className="space-y-5 px-5 pt-10">
+    <Button variant="ghost" onClick={() => setSelected(null)}><ChevronLeft /> All plans</Button>
+    <input aria-label="Plan name" value={current.name} onChange={e => save({...current,name:e.target.value})} className="w-full border-b border-input bg-transparent py-2 font-display text-3xl outline-none" />
+    <p className="text-sm text-muted-foreground">{current.items.length} exercises</p>
+    <div className="divide-y divide-border">{current.items.map((item,index) => <article key={`${item.name}-${index}`} className="space-y-3 py-4"><div className="flex items-center justify-between gap-3"><h2 className="font-semibold">{item.name}</h2><Button variant="ghost" size="icon" aria-label={`Remove ${item.name}`} onClick={() => save({...current,items:current.items.filter((_,i)=>i!==index)})}><Trash2 /></Button></div><div className="grid grid-cols-3 gap-2">{(["sets","reps","weight"] as const).map(field => <label key={field} className="text-xs text-muted-foreground"><span>{field === "weight" ? "kg / level" : field}</span><input type="number" min={0} value={item[field]} onChange={e => save({...current,items:current.items.map((it,i)=>i===index?{...it,[field]:+e.target.value}:it)})} className="mt-1 w-full rounded-lg border border-input bg-card px-2 py-2 text-center text-foreground" /></label>)}</div></article>)}</div>
+    <select aria-label="Add exercise" value="" onChange={e => { if(e.target.value) save({...current,items:[...current.items,{name:e.target.value,sets:3,reps:10,weight:10}]}); }} className="w-full rounded-xl border border-input bg-card px-3 py-3"><option value="">+ Add exercise</option>{EXERCISE_LIBRARY.filter(ex => !current.items.some(item=>item.name===ex.name)).map(ex=><option key={ex.name}>{ex.name}</option>)}</select>
+    <Button variant="destructive" className="w-full" onClick={() => {setState(x=>({...x,plans:x.plans.filter(p=>p.id!==current.id)}));setSelected(null);}}><Trash2 /> Delete plan</Button>
+  </div>;
+
+  return <div className="space-y-5 px-5 pt-10"><div className="flex items-end justify-between"><div><p className="text-sm text-muted-foreground">Reusable routines</p><h1 className="font-display text-4xl">Plans</h1></div><Button size="icon" aria-label="Create plan" onClick={createPlan}><Plus /></Button></div><div className="space-y-3">{s.plans.map(plan=><Button key={plan.id} variant="ghost" onClick={()=>setSelected(plan.id)} className="h-auto w-full justify-between rounded-2xl bg-card p-4 text-left"><span><span className="block font-semibold">{plan.name}</span><span className="mt-1 block text-xs font-normal text-muted-foreground">{plan.items.length} exercises</span></span><span className="text-muted-foreground">View</span></Button>)}</div></div>;
 }

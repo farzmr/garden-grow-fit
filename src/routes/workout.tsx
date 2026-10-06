@@ -47,6 +47,7 @@ function Workout() {
       active: null,
       activeStartedAt: undefined,
       activeFlower: undefined,
+      activePlanName: undefined,
       sessions: [...x.sessions, { id: uid(), date: today(), completedAt, minutes: x.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(x.activeStartedAt).getTime()) / 60000)) : undefined, activity: "Workout", exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length), flower: plantedFlower }],
     }));
     setFinishedFlower(plantedFlower);
@@ -65,7 +66,7 @@ function Workout() {
   return (
     <div className="space-y-5 px-5 pt-10">
       <header>
-        <h1 className="font-display text-4xl">Today's workout</h1>
+        <h1 className="font-display text-4xl">{s.activePlanName ?? "Workout"}</h1>
         <Button variant="ghost" onClick={() => nav({ to: "/" })}>Save & return to garden</Button>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
