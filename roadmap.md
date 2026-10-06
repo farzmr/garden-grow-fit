@@ -11,7 +11,7 @@
 - [x] Replace History’s feed with a calendar and detailed session events.
 - [x] Verify plan editing, workout start, calendar details, and mobile layout.
 - [x] Confirm the live preview visibly shows “Start,” side-by-side Resume/Cancel, and no daily summary.
-- [ ] Add three starter routines and plan-card difficulty, exercise count, and last-used date.
-- [ ] Show compact, full session details below the History calendar instead of an overlay.
-- [ ] Refresh the garden with an illustrated miniature landscape and planted flowers.
-- [ ] Verify new plans, completion tracking, History details, and phone layout.
+- [x] Add three starter routines and plan-card difficulty, exercise count, and last-used date.
+- [x] Show compact, full session details below the History calendar instead of an overlay.
+- [x] Refresh the garden with an illustrated miniature landscape and planted flowers.
+- [x] Verify new plans, completion tracking, History details, and phone layout.
