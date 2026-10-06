@@ -17,3 +17,4 @@
 - Render session details as an inline region below the History calendar; this keeps date context visible without a modal overlay.
 - Use a bundled dimensional garden illustration with interactive session flowers over the lawn; this provides visual depth without a heavy 3D runtime on phones.
 - Keep the three garden environments as bundled bespoke artwork and persist which one Home displays; this makes garden choice personal without adding a heavy graphics runtime.
+- Native iOS uses Capacitor with a separate BUILD_TARGET=ios SPA build into dist/client (no server.url); this keeps the web SSR build unchanged and the app offline.
