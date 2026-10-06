@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Flame, Sprout, ArrowRight, Play, X, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setState, streak, today, useStore, DAYS } from "@/lib/store";
+import { setState, streak, useStore } from "@/lib/store";
 export const Route = createFileRoute("/")({
  head: () => ({ meta: [
  { title: "Bloom — Your gym garden" }, { name: "description", content: "Your flower garden, training streak, recent activity and today's workout." },
