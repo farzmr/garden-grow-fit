@@ -15,3 +15,6 @@
 - [x] Show compact, full session details below the History calendar instead of an overlay.
 - [x] Refresh the garden with an illustrated miniature landscape and planted flowers.
 - [x] Verify new plans, completion tracking, History details, and phone layout.
+- [ ] Replace the Start tab with Gardens, rename Garden to Home, and center Home in the tab bar.
+- [ ] Add three bespoke illustrated garden scenes and let any scene become the main Home garden.
+- [ ] Verify garden selection and the updated navigation in the rendered phone preview.
