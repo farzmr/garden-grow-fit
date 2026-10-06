@@ -116,8 +116,9 @@ export function streak(sessions: Session[]) {
 
 export function lastFor(sessions: Session[], name: string) {
   for (let i = sessions.length - 1; i >= 0; i--) {
-    const ex = sessions[i].exercises.find((e) => e.name === name);
-    if (ex) return { date: sessions[i].date, best: Math.max(...ex.sets.map((s) => s.weight)) };
+    const sess = sessions[i]!;
+    const ex = sess.exercises.find((e) => e.name === name);
+    if (ex) return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)) };
   }
   return null;
 }
