@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
+import { ExerciseTrend } from "@/components/ExerciseTrend";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -9,6 +10,8 @@ export const Route = createFileRoute("/history")({
       { name: "description", content: "Every workout by date, with weights and reps, and your progress per exercise." },
       { property: "og:title", content: "History & progress — Bloom" },
       { property: "og:description", content: "See what you lifted and when." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: HistoryPage,
@@ -19,11 +22,6 @@ function HistoryPage() {
   const names = [...new Set(s.sessions.flatMap((x) => x.exercises.map((e) => e.name)))];
   const [sel, setSel] = useState<string>("");
   const pick = sel || names[0];
-  const points = s.sessions
-    .map((x) => ({ date: x.date, ex: x.exercises.find((e) => e.name === pick) }))
-    .filter((x) => x.ex)
-    .map((x) => ({ date: x.date, w: Math.max(...x.ex!.sets.map((z) => z.weight)) }));
-  const max = Math.max(1, ...points.map((p) => p.w));
 
   return (
     <div className="space-y-5 px-5 pt-10">
@@ -35,19 +33,11 @@ function HistoryPage() {
       </div>
 
       {names.length > 0 && (
-        <section className="space-y-3 rounded-3xl bg-card p-4 shadow-soft">
-          <select value={pick} onChange={(e) => setSel(e.target.value)} className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm">
+        <section className="space-y-3">
+          <select aria-label="Exercise progress" value={pick} onChange={(e) => setSel(e.target.value)} className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm">
             {names.map((n) => <option key={n}>{n}</option>)}
           </select>
-          <div className="flex h-32 items-end gap-1">
-            {points.map((p, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-[10px] text-muted-foreground">{p.w}</span>
-                <div className="w-full rounded-t-md bg-primary" style={{ height: `${(p.w / max) * 100}px` }} />
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">Heaviest weight (kg) per session</p>
+          {pick && <ExerciseTrend name={pick} />}
         </section>
       )}
 
@@ -55,10 +45,10 @@ function HistoryPage() {
       {[...s.sessions].reverse().map((x) => (
         <article key={x.id} className="rounded-3xl bg-card p-4 shadow-soft">
           <div className="flex items-center justify-between">
-            <p className="font-semibold">{x.flower} {x.activity}</p>
-            <p className="text-xs text-muted-foreground">{new Date(x.date + "T12:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</p>
+            <p className="min-w-0 break-words font-semibold">{x.flower} {x.activity}</p>
+            <p className="shrink-0 text-xs text-muted-foreground">{new Date(x.date + "T12:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</p>
           </div>
-          {x.minutes && <p className="text-sm text-muted-foreground">{x.minutes} min</p>}
+          <p className="text-xs text-muted-foreground">{x.completedAt ? new Date(x.completedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : "Time not recorded"}{x.minutes !== undefined && ` · ${x.minutes} min`}</p>
           {x.exercises.map((e) => (
             <div key={e.id} className="mt-2 text-sm">
               <p className="font-medium">{e.name}</p>

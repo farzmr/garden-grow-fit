@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { name: "apple-mobile-web-app-title", content: "Bloom" },
-      { name: "theme-color", content: "#f6f1e7" },
+      { name: "theme-color", content: "#f1eeea" },
       { title: "Bloom — Gym garden" },
       { name: "description", content: "Gym tracker that grows a flower garden with every workout." },
       { property: "og:type", content: "website" },
