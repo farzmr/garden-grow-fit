@@ -49,7 +49,7 @@ export type Session = {
   id: string;
   date: string; // YYYY-MM-DD
   activity: string;
-  minutes?: number;
+  minutes?: number | undefined;
   completedAt?: string;
   exercises: Exercise[];
   flower: string;
@@ -60,8 +60,8 @@ export type State = {
   sessions: Session[];
   plan: Record<number, PlanItem[]>;
   active: Exercise[] | null;
-  activeStartedAt?: string;
-  activeFlower?: string;
+  activeStartedAt?: string | undefined;
+  activeFlower?: string | undefined;
 };
 
 const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
