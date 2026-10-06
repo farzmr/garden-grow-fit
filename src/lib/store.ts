@@ -54,8 +54,8 @@ export type Session = {
   exercises: Exercise[];
   flower: string;
   sample?: boolean;
-  planId?: string;
-  planName?: string;
+  planId?: string | undefined;
+  planName?: string | undefined;
 };
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
 export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
