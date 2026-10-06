@@ -1,6 +1,6 @@
 # Bloom updates
-- [ ] Apply uploaded floral palette.
-- [ ] Move flower selection into Start and add sport icons and Other.
-- [ ] Show recent activity with date/time and pending workout resume/cancel.
-- [ ] Add exercise catalogue with individual weight history and line charts.
-- [ ] Verify the full start/resume/finish/history flow.
+- [x] Apply uploaded floral palette.
+- [x] Move flower selection into Start and add sport icons and Other.
+- [x] Show recent activity with date/time and pending workout resume/cancel.
+- [x] Add exercise catalogue with individual weight history and line charts.
+- [x] Verify the full start/resume/finish/history flow.
