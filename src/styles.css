@@ -116,6 +116,10 @@
 @keyframes bloom { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
 @keyframes rep { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(6px) scale(0.97); } }
 
+.garden-flowers { inset: 36% 23% 31% 22%; }
+.garden-flower { filter: drop-shadow(0 3px 2px var(--soil)); }
+.garden-flower[aria-pressed="true"] { transform: translateY(-4px) scale(1.2); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
