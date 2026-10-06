@@ -48,7 +48,8 @@ function Workout() {
       activeStartedAt: undefined,
       activeFlower: undefined,
       activePlanName: undefined,
-      sessions: [...x.sessions, { id: uid(), date: today(), completedAt, minutes: x.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(x.activeStartedAt).getTime()) / 60000)) : undefined, activity: "Workout", exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length), flower: plantedFlower }],
+      activePlanId: undefined,
+      sessions: [...x.sessions, { id: uid(), date: today(), completedAt, planId: x.activePlanId, planName: x.activePlanName, minutes: x.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(x.activeStartedAt).getTime()) / 60000)) : undefined, activity: "Workout", exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length), flower: plantedFlower }],
     }));
     setFinishedFlower(plantedFlower);
     setPlanted(true);

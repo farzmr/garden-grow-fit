@@ -54,9 +54,12 @@ export type Session = {
   exercises: Exercise[];
   flower: string;
   sample?: boolean;
+  planId?: string;
+  planName?: string;
 };
 export type PlanItem = { name: string; sets: number; reps: number; weight: number };
-export type WorkoutPlan = { id: string; name: string; items: PlanItem[] };
+export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+export type WorkoutPlan = { id: string; name: string; items: PlanItem[]; difficulty?: Difficulty };
 export type State = {
   flower: string;
   sessions: Session[];
@@ -66,12 +69,15 @@ export type State = {
   activeStartedAt?: string | undefined;
   activeFlower?: string | undefined;
   activePlanName?: string | undefined;
+  activePlanId?: string | undefined;
+  starterPlansVersion?: number;
 };
 
 const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
 const STARTER_PLAN: WorkoutPlan = {
   id: "oct-17-full-body",
   name: "Full body · Oct 17 routine",
+  difficulty: "Intermediate",
   items: [
     p("Back Squat", 3, 10, 0),
     p("Bench Press", 3, 7, 0),
@@ -87,6 +93,11 @@ const STARTER_PLAN: WorkoutPlan = {
     p("Elliptical", 1, 5, 0),
   ],
 };
+const EXTRA_PLANS: WorkoutPlan[] = [
+  { id: "bloom-lower-body", name: "Lower body & glutes", difficulty: "Beginner", items: [p("Incline Leg Press",3,10,0),p("Glute Bridge",3,12,0),p("Leg Curl",3,10,0),p("Hip Abduction",2,12,0),p("Walking Lunge",2,10,0)] },
+  { id: "bloom-upper-body", name: "Upper body strength", difficulty: "Intermediate", items: [p("Bench Press",3,8,0),p("Lat Pulldown",3,10,0),p("Seated Cable Row",3,10,0),p("Shoulder Press",3,8,0),p("Dumbbell Row",3,10,0)] },
+  { id: "bloom-gentle-full-body", name: "Gentle full body", difficulty: "Beginner", items: [p("Elliptical",1,10,0),p("Incline Leg Press",2,12,0),p("Chest Press Machine",2,10,0),p("Seated Cable Row",2,10,0),p("Glute Bridge",2,12,0)] },
+];
 const SAMPLE_SESSIONS: Session[] = [
   {
     id: "sample-session-1", date: "2026-09-28", completedAt: "2026-09-28T17:45:00", activity: "Workout", minutes: 52, flower: "🌷", sample: true,
@@ -107,7 +118,8 @@ const DEFAULT: State = {
   flower: "🌷",
   sessions: SAMPLE_SESSIONS,
   active: null,
-  plans: [STARTER_PLAN],
+  plans: [STARTER_PLAN, ...EXTRA_PLANS],
+  starterPlansVersion: 1,
   plan: {
     0: [],
     1: [p("Back Squat", 4, 8, 30), p("Walking Lunge", 3, 12, 6), p("Glute Bridge", 3, 15, 20)],
@@ -132,6 +144,14 @@ function load() {
     if (raw) {
       const saved = JSON.parse(raw) as Partial<State>;
       state = { ...DEFAULT, ...saved, plans: saved.plans?.length ? saved.plans : DEFAULT.plans };
+      if (saved.starterPlansVersion !== 1) {
+        const existing = saved.plans ?? [STARTER_PLAN];
+        state.plans = [...existing, ...EXTRA_PLANS.filter(plan => !existing.some(p => p.id === plan.id))];
+        state.starterPlansVersion = 1;
+        localStorage.setItem(KEY, JSON.stringify(state));
+      } else if (saved.plans) {
+        state.plans = saved.plans;
+      }
     }
   } catch {}
 }
@@ -160,6 +180,11 @@ export const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 export const imageFor = (name: string) => EXERCISE_LIBRARY.find((e) => e.name === name);
+
+export function lastUsedFor(sessions: Session[], plan: WorkoutPlan) {
+  return sessions.filter(session => !session.sample && (session.planId === plan.id || (!session.planId && session.planName === plan.name)))
+    .map(session => session.completedAt ?? `${session.date}T12:00:00`).sort().at(-1);
+}
 
 export function planToExercises(items: PlanItem[]): Exercise[] {
   return items.map((i) => ({
