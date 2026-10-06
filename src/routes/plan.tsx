@@ -10,6 +10,8 @@ export const Route = createFileRoute("/plan")({
       { name: "description", content: "Set which exercises you do on each day of the week." },
       { property: "og:title", content: "Weekly plan — Bloom" },
       { property: "og:description", content: "Your training plan for every day." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Plan,

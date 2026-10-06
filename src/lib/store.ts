@@ -5,6 +5,18 @@ import lunge from "@/assets/ex-lunge.jpg";
 import press from "@/assets/ex-press.jpg";
 import row from "@/assets/ex-row.jpg";
 import bridge from "@/assets/ex-bridge.jpg";
+import bench from "@/assets/ex-bench.jpg";
+import legPress from "@/assets/ex-leg-press.jpg";
+import lat from "@/assets/ex-lat-pulldown.jpg";
+import extension from "@/assets/ex-leg-extension.jpg";
+import chest from "@/assets/ex-chest-press.jpg";
+import adduction from "@/assets/ex-adduction.jpg";
+import abduction from "@/assets/ex-abduction.jpg";
+import back from "@/assets/ex-back-extension.jpg";
+import stairs from "@/assets/ex-stairs.jpg";
+import elliptical from "@/assets/ex-elliptical.jpg";
+import cableRow from "@/assets/ex-cable-row.jpg";
+import legCurl from "@/assets/ex-leg-curl.jpg";
 
 export const EXERCISE_LIBRARY: { name: string; image?: string; tip: string }[] = [
   { name: "Back Squat", image: squat, tip: "Chest up, knees track over toes, sit back and down." },
@@ -13,6 +25,18 @@ export const EXERCISE_LIBRARY: { name: string; image?: string; tip: string }[] =
   { name: "Shoulder Press", image: press, tip: "Ribs down, press straight up, don't arch your back." },
   { name: "Dumbbell Row", image: row, tip: "Hinge forward, pull elbows toward your hips." },
   { name: "Glute Bridge", image: bridge, tip: "Drive through heels, pause and squeeze at the top." },
+  { name: "Bench Press", image: bench, tip: "Keep feet planted and lower the bar with control." },
+  { name: "Incline Leg Press", image: legPress, tip: "Keep your back against the pad; avoid locking knees." },
+  { name: "Lat Pulldown", image: lat, tip: "Pull toward your upper chest with a wide grip." },
+  { name: "Leg Extension", image: extension, tip: "Extend smoothly without swinging." },
+  { name: "Chest Press Machine", image: chest, tip: "Keep shoulders down and press with control." },
+  { name: "Hip Adduction", image: adduction, tip: "Bring knees inward slowly, without momentum." },
+  { name: "Hip Abduction", image: abduction, tip: "Push knees outward with a steady torso." },
+  { name: "Back Extension", image: back, tip: "Hinge at the hips; stop when your body is straight." },
+  { name: "StairMaster", image: stairs, tip: "Stay upright and step steadily." },
+  { name: "Elliptical", image: elliptical, tip: "Keep a smooth rhythm and relaxed shoulders." },
+  { name: "Seated Cable Row", image: cableRow, tip: "Pull elbows back without rocking your torso." },
+  { name: "Leg Curl", image: legCurl, tip: "Keep hips against the pad and curl slowly." },
 ];
 
 export const FLOWERS = ["🌷", "🌸", "🌻", "🌹", "🌼", "🪻", "🌺", "💐"];
@@ -25,7 +49,8 @@ export type Session = {
   id: string;
   date: string; // YYYY-MM-DD
   activity: string;
-  minutes?: number;
+  minutes?: number | undefined;
+  completedAt?: string;
   exercises: Exercise[];
   flower: string;
 };
@@ -35,6 +60,8 @@ export type State = {
   sessions: Session[];
   plan: Record<number, PlanItem[]>;
   active: Exercise[] | null;
+  activeStartedAt?: string | undefined;
+  activeFlower?: string | undefined;
 };
 
 const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
@@ -116,9 +143,10 @@ export function streak(sessions: Session[]) {
 
 export function lastFor(sessions: Session[], name: string) {
   for (let i = sessions.length - 1; i >= 0; i--) {
-    const sess = sessions[i]!;
+    const sess = sessions[i];
+    if (!sess) continue;
     const ex = sess.exercises.find((e) => e.name === name);
-    if (ex) return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)) };
+    if (ex?.sets.length) return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)) };
   }
   return null;
 }
