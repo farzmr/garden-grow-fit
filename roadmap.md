@@ -18,3 +18,8 @@
 - [x] Replace the Start tab with Gardens, rename Garden to Home, and center Home in the tab bar.
 - [x] Add three bespoke illustrated garden scenes and let any scene become the main Home garden.
 - [x] Verify garden selection and the updated navigation in the rendered phone preview.
+- [x] Create private storage in the connected Supabase project for workouts, plans, garden choice and an unfinished workout, visible only to its owner.
+- [x] Add sign in, create account and password reset, plus a backup card on Home.
+- [x] Keep this phone and the account copy in step automatically; first sign-in uploads the records already on the phone.
+- [x] Verify sign in, first upload, a completed workout reaching the database, and restore on a fresh device.
+- [x] Remove the throwaway test accounts and their rows from the project.
