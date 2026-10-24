@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { TabBar } from "@/components/TabBar";
+import { startSync } from "@/lib/sync";
 
 function NotFoundComponent() {
   return (
@@ -117,6 +118,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Keeps this phone and your account's copy of the garden in step.
+  useEffect(() => startSync(), []);
 
   return (
     <QueryClientProvider client={queryClient}>
