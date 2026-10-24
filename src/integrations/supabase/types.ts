@@ -14,7 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      active_workouts: {
+        Row: {
+          exercises: Json
+          flower: string | null
+          plan_id: string | null
+          plan_name: string | null
+          started_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          exercises?: Json
+          flower?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
+          started_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          exercises?: Json
+          flower?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
+          started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          created_at: string
+          difficulty: string
+          id: string
+          items: Json
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string
+          id: string
+          items?: Json
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          id?: string
+          items?: Json
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          flower: string
+          id: string
+          main_garden: string
+          updated_at: string
+        }
+        Insert: {
+          flower?: string
+          id: string
+          main_garden?: string
+          updated_at?: string
+        }
+        Update: {
+          flower?: string
+          id?: string
+          main_garden?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          activity: string
+          completed_at: string | null
+          created_at: string
+          date: string
+          exercises: Json
+          flower: string
+          id: string
+          minutes: number | null
+          plan_id: string | null
+          plan_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity: string
+          completed_at?: string | null
+          created_at?: string
+          date: string
+          exercises?: Json
+          flower?: string
+          id: string
+          minutes?: number | null
+          plan_id?: string | null
+          plan_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity?: string
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          exercises?: Json
+          flower?: string
+          id?: string
+          minutes?: number | null
+          plan_id?: string | null
+          plan_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
