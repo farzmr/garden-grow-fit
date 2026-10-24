@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Flame, ArrowRight, Play, X, Clock3 } from "lucide-react";
 import { Garden } from "@/components/Garden";
 import { Button } from "@/components/ui/button";
+import { AccountCard } from "@/components/AccountCard";
 import { setState, streak, useStore } from "@/lib/store";
 export const Route = createFileRoute("/")({
  head: () => ({ meta: [
@@ -21,5 +22,6 @@ function Home() {
  <Button asChild className="h-16 w-full rounded-2xl text-lg"><Link to="/start">Start<ArrowRight /></Link></Button>
  {s.active !== null && <section className="space-y-3 border-y border-border py-4"><h2 className="font-semibold">Workout in progress</h2><p className="text-sm text-muted-foreground">{s.activePlanName ? `${s.activePlanName} · ` : ""}{s.active.length} exercises · {completed} sets completed</p>{s.activeStartedAt && <p className="text-xs text-muted-foreground">Started {new Date(s.activeStartedAt).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</p>}{cancel ? <><p className="text-sm">Discard this unfinished workout?</p><div className="flex gap-2"><Button className="flex-[2]" variant="outline" onClick={() => setCancel(false)}>Keep it</Button><Button className="flex-1" variant="destructive" onClick={() => { setState(x => ({...x,active:null,activeStartedAt:undefined,activeFlower:undefined,activePlanId:undefined,activePlanName:undefined}));setCancel(false); }}>Discard</Button></div></> : <div className="flex gap-2"><Button asChild variant="secondary" className="flex-[2]"><Link to="/workout"><Play /> Resume</Link></Button><Button variant="outline" className="flex-1" onClick={() => setCancel(true)}><X /> Cancel</Button></div>}</section>}
  <section className="space-y-3"><div className="flex items-center justify-between"><h2 className="font-display text-xl">Last activity</h2><Link to="/history" className="text-xs font-medium text-primary">View history</Link></div>{last ? <div className="flex gap-3 rounded-2xl bg-card p-4 shadow-soft"><span className="text-3xl">{last.flower}</span><div className="min-w-0"><p className="break-words font-semibold">{last.activity}</p><p className="mt-1 text-xs text-muted-foreground">{new Date(last.completedAt ?? last.date+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}{last.completedAt ? ` · ${new Date(last.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}` : " · Time not recorded"}</p><p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="h-3 w-3" />{last.minutes !== undefined ? `${last.minutes} min` : "Duration not recorded"}{last.exercises.length > 0 && ` · ${last.exercises.length} exercises`}</p></div></div> : <p className="text-sm text-muted-foreground">No activities yet.</p>}</section>
- </div>;
+  <AccountCard />
+  </div>;
 }

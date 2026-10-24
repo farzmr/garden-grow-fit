@@ -177,6 +177,31 @@ export function useStore() {
   );
 }
 
+/** Read the current state outside React (used by the backup sync layer). */
+export function readState(): State {
+  load();
+  return state;
+}
+
+/** Subscribe to state changes without React. */
+export function subscribeStore(listener: () => void) {
+  load();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Replace local state with a copy that came from the server, without marking it as a local edit. */
+export function applyRemoteState(next: State) {
+  load();
+  state = next;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch {}
+  listeners.forEach((l) => l());
+}
+
 export const uid = () => Math.random().toString(36).slice(2, 10);
 export const today = () => {
   const d = new Date();
