@@ -181,48 +181,73 @@ function Workout() {
                 </div>
                 <Button aria-label="Remove exercise" onClick={() => update((l) => l.filter((e) => e.id !== ex.id))} className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></Button>
               </div>
-              <div className="space-y-2">
-                {ex.sets.map((set, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="w-6 text-sm text-muted-foreground">{i + 1}</span>
-                    {isDuration ? (
-                      <NumField
-                        value={set.time ?? set.reps ?? defaultDuration}
-                        suffix={unit}
-                        onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, time: v, reps: v, weight: 0 } : z) } : e))}
-                      />
-                    ) : (
-                      <>
-                        <NumField value={set.weight} suffix="kg" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))} />
-                        <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
-                      </>
-                    )}
-                    <Button
-                      aria-label="Complete set"
-                      onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, done: !z.done } : z) } : e))}
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${set.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                    >
-                      <Check className="h-5 w-5" />
-                    </Button>
-                    <Button aria-label="Remove set" onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.filter((_, j) => j !== i) } : e))} className="text-muted-foreground"><X className="h-4 w-4" /></Button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => update((l) => l.map((e) => {
-                    if (e.id !== ex.id) return e;
-                    const lastSet = e.sets.at(-1);
-                    const newSet = isDuration
-                      ? { weight: 0, reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration, time: lastSet?.time ?? lastSet?.reps ?? defaultDuration, done: false }
-                      : { ...(lastSet ?? { weight: 10, reps: 10 }), done: false };
-                    return { ...e, sets: [...e.sets, newSet] };
-                  }))}
-                  className="flex-1 rounded-xl bg-muted py-2 text-sm"
-                >
-                  + Set
-                </Button>
-                <Button onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z) => ({ ...z, done: !allDone })) } : e))} className="flex-1 rounded-xl bg-accent py-2 text-sm font-semibold text-accent-foreground">{allDone ? "Undo" : "Complete all"}</Button>
+              <div className="space-y-1 pt-1">
+                <div className="flex gap-2 pl-9 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
+                  <span className="flex-1 text-center">{isDuration ? "DURATION" : "WEIGHT"}</span>
+                  {!isDuration && <span className="flex-1 text-center">REPS</span>}
+                </div>
+                <div className="space-y-0">
+                  {ex.sets.map((set, i) => (
+                    <div key={i} className="flex items-center gap-2 border-t-[1.5px] border-[#E8DCEB] py-2.5">
+                      <span className="w-7 text-xl font-bold text-[#4A1D45]">{i + 1}</span>
+                      {isDuration ? (
+                        <NumField
+                          value={set.time ?? set.reps ?? defaultDuration}
+                          suffix={unit}
+                          onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, time: v, reps: v, weight: 0 } : z) } : e))}
+                        />
+                      ) : (
+                        <>
+                          <NumField value={set.weight} suffix="kg" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))} />
+                          <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={set.done ? "Mark set incomplete" : "Complete set"}
+                        onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, done: !z.done } : z) } : e))}
+                        className={`flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all ${
+                          set.done
+                            ? "border-2 border-[#4A1D45] bg-[#4A1D45] text-white shadow-sm"
+                            : "border-2 border-[#D0AECF] bg-white text-[#4A1D45] hover:bg-[#FAF6FA]"
+                        }`}
+                      >
+                        <Check className="h-5 w-5 stroke-[2.2]" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Remove set"
+                        onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.filter((_, j) => j !== i) } : e))}
+                        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
+                      >
+                        <X className="h-5 w-5 stroke-[2.2]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3 pl-9 pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => update((l) => l.map((e) => {
+                      if (e.id !== ex.id) return e;
+                      const lastSet = e.sets.at(-1);
+                      const newSet = isDuration
+                        ? { weight: 0, reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration, time: lastSet?.time ?? lastSet?.reps ?? defaultDuration, done: false }
+                        : { ...(lastSet ?? { weight: 10, reps: 10 }), done: false };
+                      return { ...e, sets: [...e.sets, newSet] };
+                    }))}
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#E8DCEB] text-[17px] font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
+                  >
+                    + Set
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z) => ({ ...z, done: !allDone })) } : e))}
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#4A1D45] text-[17px] font-bold text-[#E8DCEB] transition-colors hover:bg-[#3d1739]"
+                  >
+                    {allDone ? "Undo all" : "Complete all"}
+                  </button>
+                </div>
               </div>
             </div>
           </article>
@@ -273,9 +298,18 @@ function Workout() {
 
 function NumField({ value, suffix, onChange }: { value: number; suffix: string; onChange: (v: number) => void }) {
   return (
-    <label className="flex flex-1 items-center rounded-xl border border-input bg-background px-2">
-      <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(+e.target.value)} min={0} aria-label={suffix === "kg" ? "Weight in kg" : "Reps"} className="min-w-0 w-full bg-transparent py-2 text-center outline-none" />
-      <span className="text-xs text-muted-foreground">{suffix}</span>
+    <label className="flex h-10 flex-1 box-border cursor-text items-center justify-center gap-1.5 rounded-2xl bg-[#F1EEE9] px-2.5 text-[#4A1D45] transition-all focus-within:ring-2 focus-within:ring-[#D0AECF]">
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value === 0 && suffix !== "kg" ? "" : value}
+        placeholder="0"
+        onChange={(e) => onChange(e.target.value === "" ? 0 : +e.target.value)}
+        min={0}
+        aria-label={suffix === "kg" ? "Weight in kg" : suffix}
+        className="w-14 bg-transparent text-right font-sans text-xl font-medium text-[#4A1D45] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      />
+      <span className="shrink-0 text-sm font-normal text-[#4A1D45]/70">{suffix}</span>
     </label>
   );
 }
