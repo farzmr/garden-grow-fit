@@ -1,0 +1,20 @@
+{
+  "short_name": "Bloom",
+  "name": "Bloom — Gym Garden",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f1eeea",
+  "theme_color": "#f1eeea",
+  "display": "standalone"
+}

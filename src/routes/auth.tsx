@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, CloudUpload, KeyRound, Loader2, LogOut, MailCheck } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import {
   createAccount,
@@ -105,10 +106,15 @@ function Auth() {
 
   return (
     <div className="mx-auto max-w-md space-y-5 px-5 pt-10">
+      <div className="flex items-center gap-3">
+        <img src={logoImg} alt="Bloom" className="h-12 w-12 rounded-2xl border border-border/40 shadow-soft object-contain" />
+        <div>
+          <p className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">Bloom · Gym Garden</p>
+          <h1 className="font-display text-3xl leading-tight">{mode === "in" ? "Welcome back" : "Create your account"}</h1>
+        </div>
+      </div>
       <div>
-        <p className="text-sm text-muted-foreground">Your backup</p>
-        <h1 className="font-display text-4xl">{mode === "in" ? "Welcome back" : "Create your account"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {mode === "in"
             ? "Sign in to load the garden, plans and workouts you saved."
             : "Your workouts, plans and garden are kept in your own account, private to you."}
