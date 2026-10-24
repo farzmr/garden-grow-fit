@@ -147,12 +147,13 @@ export function sessionRow(session: Session, userId: string) {
 }
 
 export function sessionFromRow(row: SessionRow): Session {
+  const completedAt = row.completed_at ?? undefined;
   return {
     id: row.id,
     date: row.date,
     activity: row.activity,
     minutes: row.minutes ?? undefined,
-    completedAt: row.completed_at ?? undefined,
+    ...(completedAt ? { completedAt } : {}),
     exercises: parseExercises(row.exercises),
     flower: row.flower || "🌷",
     planId: row.plan_id ?? undefined,
