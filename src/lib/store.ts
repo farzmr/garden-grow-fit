@@ -31,6 +31,7 @@ import rowing from "@/assets/ex-rowing.jpg";
 export type ExerciseCategory = "Chest" | "Back" | "Shoulders" | "Legs" | "Arms" | "Core" | "Cardio";
 export type TrackingType = "weight" | "duration";
 export type TimeUnit = "sec" | "min";
+export type WeightUnit = "kg" | "lb";
 export type ExternalGuideLink = { name: string; url: string };
 
 export type ExerciseInfo = {
@@ -893,7 +894,7 @@ export const CLASSES = ["Workout", "Yoga", "Pilates", "Spin", "Cardio", "Dance",
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export type SetEntry = { weight: number; reps: number; time?: number | undefined; done: boolean };
-export type Exercise = { id: string; name: string; sets: SetEntry[] };
+export type Exercise = { id: string; name: string; sets: SetEntry[]; weightUnit?: WeightUnit | undefined };
 export type Session = {
   id: string;
   date: string; // YYYY-MM-DD
@@ -1140,7 +1141,7 @@ export function lastFor(sessions: Session[], name: string): { date: string; best
         const best = Math.max(...ex.sets.map((s) => s.time ?? s.reps ?? s.weight));
         return { date: sess.date, best, unit };
       }
-      return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)), unit: "kg" };
+      return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)), unit: ex.weightUnit ?? "kg" };
     }
   }
   return null;

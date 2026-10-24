@@ -5,7 +5,7 @@ import { Check, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
 import { FlowerIcon } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
-import { EXERCISE_LIBRARY, imageFor, lastFor, lastLoggedSetsFor, setState, today, uid, useStore, type Exercise } from "@/lib/store";
+import { EXERCISE_LIBRARY, imageFor, lastFor, lastLoggedSetsFor, setState, today, uid, useStore, type Exercise, type WeightUnit } from "@/lib/store";
 
 export const Route = createFileRoute("/workout")({
   head: () => ({
@@ -55,9 +55,32 @@ function Workout() {
             { weight: 10, reps: 10, done: false },
             { weight: 10, reps: 10, done: false },
           ];
-    update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets }]);
+    update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets, weightUnit: "kg" }]);
     setAdding(false);
     setCustom("");
+  };
+
+  const toggleWeightUnit = (exId: string) => {
+    update((l) =>
+      l.map((e) => {
+        if (e.id !== exId) return e;
+        const currentUnit: WeightUnit = e.weightUnit ?? "kg";
+        const nextUnit: WeightUnit = currentUnit === "kg" ? "lb" : "kg";
+        const convertedSets = e.sets.map((s) => {
+          if (!s.weight) return s;
+          const newWeight =
+            nextUnit === "lb"
+              ? Math.round(s.weight * 2.20462 * 2) / 2
+              : Math.round((s.weight / 2.20462) * 2) / 2;
+          return { ...s, weight: newWeight };
+        });
+        return {
+          ...e,
+          weightUnit: nextUnit,
+          sets: convertedSets,
+        };
+      })
+    );
   };
 
   const finish = (details: { feelingEmoji?: string; notes?: string }) => {
@@ -139,6 +162,7 @@ function Workout() {
         const isDuration = info?.trackingType === "duration";
         const unit = info?.timeUnit ?? "sec";
         const defaultDuration = unit === "min" ? 20 : 60;
+        const weightUnit: WeightUnit = ex.weightUnit ?? "kg";
         return (
           <article key={ex.id} className={`overflow-hidden rounded-3xl bg-card shadow-soft ${allDone ? "opacity-70" : ""}`}>
             {info?.image && (
@@ -162,20 +186,22 @@ function Workout() {
                     </p>
                   )}
                   {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#5E3157]">Guides:</span>
-                      {info.myoAtlasLinks.map((link) => (
-                        <a
-                          key={link.url}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-xl border border-[#D0AECF]/50 bg-[#E8DCEB]/50 px-2.5 py-0.5 text-xs font-medium text-[#4A1D45] transition-colors hover:bg-[#E8DCEB]"
-                        >
-                          <span>{link.name}</span>
-                          <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                        </a>
-                      ))}
+                    <div className="flex items-center gap-1.5 pt-2 min-w-0 max-w-full">
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#5E3157]">Guides:</span>
+                      <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar min-w-0">
+                        {info.myoAtlasLinks.map((link) => (
+                          <a
+                            key={link.url}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[#D0AECF]/50 bg-[#E8DCEB]/50 px-2.5 py-0.5 text-xs font-medium text-[#4A1D45] transition-colors hover:bg-[#E8DCEB] whitespace-nowrap"
+                          >
+                            <span className="truncate max-w-[130px]">{link.name}</span>
+                            <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -190,7 +216,22 @@ function Workout() {
               </div>
               <div className="space-y-1 pt-1">
                 <div className="flex gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
-                  <span className="flex-1 text-center">{isDuration ? "DURATION" : "WEIGHT"}</span>
+                  {isDuration ? (
+                    <span className="flex-1 text-center">DURATION</span>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center gap-1">
+                      <span>WEIGHT</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleWeightUnit(ex.id)}
+                        className="inline-flex items-center rounded-md border border-[#D0AECF]/60 bg-[#E8DCEB] px-1.5 py-0.5 text-[9px] font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3] cursor-pointer"
+                        title={`Click to switch between kg and lb (current: ${weightUnit})`}
+                      >
+                        <span>{weightUnit.toUpperCase()}</span>
+                        <span className="ml-0.5 opacity-60">⇄</span>
+                      </button>
+                    </div>
+                  )}
                   {!isDuration && <span className="flex-1 text-center">REPS</span>}
                 </div>
                 <div className="space-y-0">
@@ -205,7 +246,12 @@ function Workout() {
                         />
                       ) : (
                         <>
-                          <NumField value={set.weight} suffix="kg" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))} />
+                          <NumField
+                            value={set.weight}
+                            suffix={weightUnit}
+                            onToggleUnit={() => toggleWeightUnit(ex.id)}
+                            onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))}
+                          />
                           <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
                         </>
                       )}
@@ -238,9 +284,11 @@ function Workout() {
                     onClick={() => update((l) => l.map((e) => {
                       if (e.id !== ex.id) return e;
                       const lastSet = e.sets.at(-1);
+                      const currentWeightUnit = e.weightUnit ?? "kg";
+                      const defaultWeight = currentWeightUnit === "lb" ? 25 : 10;
                       const newSet = isDuration
                         ? { weight: 0, reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration, time: lastSet?.time ?? lastSet?.reps ?? defaultDuration, done: false }
-                        : { ...(lastSet ?? { weight: 10, reps: 10 }), done: false };
+                        : { ...(lastSet ?? { weight: defaultWeight, reps: 10 }), done: false };
                       return { ...e, sets: [...e.sets, newSet] };
                     }))}
                     className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#E8DCEB] text-sm font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
@@ -303,20 +351,45 @@ function Workout() {
   );
 }
 
-function NumField({ value, suffix, onChange }: { value: number; suffix: string; onChange: (v: number) => void }) {
+function NumField({
+  value,
+  suffix,
+  onChange,
+  onToggleUnit,
+}: {
+  value: number;
+  suffix: string;
+  onChange: (v: number) => void;
+  onToggleUnit?: (() => void) | undefined;
+}) {
   return (
     <label className="flex h-10 flex-1 box-border cursor-text items-center justify-center gap-1 rounded-2xl bg-[#F1EEE9] px-2 text-[#4A1D45] transition-all focus-within:ring-2 focus-within:ring-[#D0AECF]">
       <input
         type="number"
         inputMode="decimal"
-        value={value === 0 && suffix !== "kg" ? "" : value}
+        value={value === 0 && suffix !== "kg" && suffix !== "lb" ? "" : value}
         placeholder="0"
         onChange={(e) => onChange(e.target.value === "" ? 0 : +e.target.value)}
         min={0}
-        aria-label={suffix === "kg" ? "Weight in kg" : suffix}
+        aria-label={suffix === "kg" || suffix === "lb" ? `Weight in ${suffix}` : suffix}
         className="w-10 bg-transparent text-right font-sans text-base font-semibold text-[#4A1D45] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[#4A1D45]/30"
       />
-      <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">{suffix}</span>
+      {onToggleUnit ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleUnit();
+          }}
+          title="Click to switch between kg and lb"
+          className="shrink-0 text-xs font-semibold text-[#4A1D45]/75 hover:text-[#4A1D45] underline decoration-dotted underline-offset-2 cursor-pointer transition-colors"
+        >
+          {suffix}
+        </button>
+      ) : (
+        <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">{suffix}</span>
+      )}
     </label>
   );
 }

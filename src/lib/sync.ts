@@ -117,7 +117,13 @@ export function parseExercises(value: unknown): Exercise[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter(isRecord)
-    .map((ex) => ({ id: str(ex["id"]) || uid(), name: str(ex["name"]), sets: parseSets(ex["sets"]) }))
+    .map((ex) => {
+      const exercise: Exercise = { id: str(ex["id"]) || uid(), name: str(ex["name"]), sets: parseSets(ex["sets"]) };
+      if (ex["weightUnit"] === "lb" || ex["weightUnit"] === "kg") {
+        exercise.weightUnit = ex["weightUnit"];
+      }
+      return exercise;
+    })
     .filter((ex) => ex.name !== "");
 }
 
