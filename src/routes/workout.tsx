@@ -147,49 +147,56 @@ function Workout() {
               </div>
             )}
             <div className="space-y-3 p-4">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold">{ex.name}</h2>
+                  <h2 className="text-xl font-bold tracking-tight text-[#2D1B2E]">{ex.name}</h2>
                   {info && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      <span className="font-semibold text-foreground">Avoid: </span>
+                    <p className="mt-1 text-xs leading-relaxed text-[#2D1B2E]/70">
+                      <span className="font-semibold text-[#4A1D45]">Avoid: </span>
                       {info.avoid ?? info.tip}
                     </p>
                   )}
                   {last && (
-                    <p className="mt-1 text-xs text-primary">
-                      Last: {last.best} {last.unit ?? "kg"} on {last.date}
+                    <p className="mt-1 text-xs font-medium text-[#5E3157]/70">
+                      Last: <span className="font-semibold text-[#4A1D45]">{last.best} {last.unit ?? "kg"}</span> on {last.date}
                     </p>
                   )}
                   {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
-                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Guides:</span>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#5E3157]">Guides:</span>
                       {info.myoAtlasLinks.map((link) => (
                         <a
                           key={link.url}
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/70 px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted hover:border-primary/40 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-xl border border-[#D0AECF]/50 bg-[#E8DCEB]/50 px-2.5 py-0.5 text-xs font-medium text-[#4A1D45] transition-colors hover:bg-[#E8DCEB]"
                         >
                           <span>{link.name}</span>
-                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
+                          <ExternalLink className="h-2.5 w-2.5 opacity-60" />
                         </a>
                       ))}
                     </div>
                   )}
                 </div>
-                <Button aria-label="Remove exercise" onClick={() => update((l) => l.filter((e) => e.id !== ex.id))} className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></Button>
+                <button
+                  type="button"
+                  aria-label="Remove exercise"
+                  onClick={() => update((l) => l.filter((e) => e.id !== ex.id))}
+                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
+                >
+                  <Trash2 className="h-4 w-4 stroke-[2.2]" />
+                </button>
               </div>
               <div className="space-y-1 pt-1">
-                <div className="flex gap-2 pl-9 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
+                <div className="flex gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
                   <span className="flex-1 text-center">{isDuration ? "DURATION" : "WEIGHT"}</span>
                   {!isDuration && <span className="flex-1 text-center">REPS</span>}
                 </div>
                 <div className="space-y-0">
                   {ex.sets.map((set, i) => (
                     <div key={i} className="flex items-center gap-2 border-t-[1.5px] border-[#E8DCEB] py-2.5">
-                      <span className="w-7 text-xl font-bold text-[#4A1D45]">{i + 1}</span>
+                      <span className="w-6 text-center text-base font-bold text-[#4A1D45] shrink-0">{i + 1}</span>
                       {isDuration ? (
                         <NumField
                           value={set.time ?? set.reps ?? defaultDuration}
@@ -225,7 +232,7 @@ function Workout() {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-3 pl-9 pt-1.5">
+                <div className="flex gap-3 pl-8 pt-1.5">
                   <button
                     type="button"
                     onClick={() => update((l) => l.map((e) => {
@@ -236,14 +243,14 @@ function Workout() {
                         : { ...(lastSet ?? { weight: 10, reps: 10 }), done: false };
                       return { ...e, sets: [...e.sets, newSet] };
                     }))}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#E8DCEB] text-[17px] font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#E8DCEB] text-sm font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
                   >
                     + Set
                   </button>
                   <button
                     type="button"
                     onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z) => ({ ...z, done: !allDone })) } : e))}
-                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#4A1D45] text-[17px] font-bold text-[#E8DCEB] transition-colors hover:bg-[#3d1739]"
+                    className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#4A1D45] text-sm font-bold text-[#E8DCEB] transition-colors hover:bg-[#3d1739]"
                   >
                     {allDone ? "Undo all" : "Complete all"}
                   </button>
@@ -298,7 +305,7 @@ function Workout() {
 
 function NumField({ value, suffix, onChange }: { value: number; suffix: string; onChange: (v: number) => void }) {
   return (
-    <label className="flex h-10 flex-1 box-border cursor-text items-center justify-center gap-1.5 rounded-2xl bg-[#F1EEE9] px-2.5 text-[#4A1D45] transition-all focus-within:ring-2 focus-within:ring-[#D0AECF]">
+    <label className="flex h-10 flex-1 box-border cursor-text items-center justify-center gap-1 rounded-2xl bg-[#F1EEE9] px-2 text-[#4A1D45] transition-all focus-within:ring-2 focus-within:ring-[#D0AECF]">
       <input
         type="number"
         inputMode="decimal"
@@ -307,9 +314,9 @@ function NumField({ value, suffix, onChange }: { value: number; suffix: string; 
         onChange={(e) => onChange(e.target.value === "" ? 0 : +e.target.value)}
         min={0}
         aria-label={suffix === "kg" ? "Weight in kg" : suffix}
-        className="w-14 bg-transparent text-right font-sans text-xl font-medium text-[#4A1D45] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        className="w-10 bg-transparent text-right font-sans text-base font-semibold text-[#4A1D45] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[#4A1D45]/30"
       />
-      <span className="shrink-0 text-sm font-normal text-[#4A1D45]/70">{suffix}</span>
+      <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">{suffix}</span>
     </label>
   );
 }
