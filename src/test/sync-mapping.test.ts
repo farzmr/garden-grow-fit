@@ -70,6 +70,25 @@ describe("session mapping", () => {
     expect(back.completedAt).toBeUndefined();
     expect(back.activity).toBe("Yoga");
   });
+
+  it("preserves location, feelingEmoji, notes and intensity across sync rows", () => {
+    const sessionWithMeta: Session = {
+      id: "s-3",
+      date: "2026-10-24",
+      activity: "Pilates",
+      minutes: 45,
+      completedAt: "2026-10-24T12:00:00",
+      exercises: [],
+      flower: "🪻",
+      location: "Equinox Studio",
+      feelingEmoji: "💪",
+      notes: "Felt amazing, great core workout",
+      intensity: "Moderate",
+    };
+    const row = sessionRow(sessionWithMeta, "u-1");
+    const restored = sessionFromRow(row);
+    expect(restored).toEqual(sessionWithMeta);
+  });
 });
 
 describe("stored values that arrive in a bad shape", () => {

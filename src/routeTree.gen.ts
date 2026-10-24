@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ExercisesRouteImport } from './routes/exercises'
 import { Route as GardensRouteImport } from './routes/gardens'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as PlanRouteImport } from './routes/plan'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as WorkoutRouteImport } from './routes/workout'
@@ -23,6 +25,11 @@ import { Route as ExerciseNameRouteImport } from './routes/exercise.$name'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -50,6 +57,11 @@ const PlanRoute = PlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -73,11 +85,13 @@ const ExerciseNameRoute = ExerciseNameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/exercises': typeof ExercisesRoute
   '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/start': typeof StartRoute
   '/workout': typeof WorkoutRoute
@@ -85,11 +99,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/exercises': typeof ExercisesRoute
   '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/start': typeof StartRoute
   '/workout': typeof WorkoutRoute
@@ -98,11 +114,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
   '/auth': typeof AuthRoute
   '/exercises': typeof ExercisesRoute
   '/gardens': typeof GardensRoute
   '/history': typeof HistoryRoute
   '/plan': typeof PlanRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/start': typeof StartRoute
   '/workout': typeof WorkoutRoute
@@ -112,11 +130,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activity'
     | '/auth'
     | '/exercises'
     | '/gardens'
     | '/history'
     | '/plan'
+    | '/profile'
     | '/reset-password'
     | '/start'
     | '/workout'
@@ -124,11 +144,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activity'
     | '/auth'
     | '/exercises'
     | '/gardens'
     | '/history'
     | '/plan'
+    | '/profile'
     | '/reset-password'
     | '/start'
     | '/workout'
@@ -136,11 +158,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activity'
     | '/auth'
     | '/exercises'
     | '/gardens'
     | '/history'
     | '/plan'
+    | '/profile'
     | '/reset-password'
     | '/start'
     | '/workout'
@@ -149,11 +173,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
   AuthRoute: typeof AuthRoute
   ExercisesRoute: typeof ExercisesRoute
   GardensRoute: typeof GardensRoute
   HistoryRoute: typeof HistoryRoute
   PlanRoute: typeof PlanRoute
+  ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   StartRoute: typeof StartRoute
   WorkoutRoute: typeof WorkoutRoute
@@ -167,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -204,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -237,11 +277,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
   AuthRoute: AuthRoute,
   ExercisesRoute: ExercisesRoute,
   GardensRoute: GardensRoute,
   HistoryRoute: HistoryRoute,
   PlanRoute: PlanRoute,
+  ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   StartRoute: StartRoute,
   WorkoutRoute: WorkoutRoute,

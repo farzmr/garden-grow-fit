@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { House, ClipboardList, History, Trees, Dumbbell } from "lucide-react";
 
 const tabs = [
@@ -10,6 +10,12 @@ const tabs = [
 ] as const;
 
 export function TabBar() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  if (pathname === "/auth" || pathname === "/reset-password") {
+    return null;
+  }
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-md border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <div className="grid grid-cols-5">

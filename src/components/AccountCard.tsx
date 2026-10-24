@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Cloud, CloudUpload, LogOut } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { CloudUpload, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import { useSyncStatus } from "@/lib/sync";
@@ -19,24 +19,7 @@ export function AccountCard() {
   };
 
   if (status.phase === "signed-out") {
-    return (
-      <section className="rounded-2xl border border-dashed border-border bg-card p-4">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <Cloud className="h-4 w-4 text-primary" />
-          Keep a copy of your garden
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Sign in so your workouts, plans and garden are stored in your own account — a new phone can then pick up
-          exactly where this one left off.
-        </p>
-        <Button asChild variant="secondary" className="mt-3 h-11 w-full">
-          <Link to="/auth">
-            Sign in
-            <ArrowRight />
-          </Link>
-        </Button>
-      </section>
-    );
+    return null;
   }
 
   const at = status.at

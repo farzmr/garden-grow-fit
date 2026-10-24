@@ -105,7 +105,12 @@ export function parseSets(value: unknown): SetEntry[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter(isRecord)
-    .map((set) => ({ weight: num(set["weight"]), reps: num(set["reps"]), done: set["done"] === true }));
+    .map((set) => ({
+      weight: num(set["weight"]),
+      reps: num(set["reps"]),
+      time: typeof set["time"] === "number" ? set["time"] : undefined,
+      done: set["done"] === true,
+    }));
 }
 
 export function parseExercises(value: unknown): Exercise[] {
@@ -125,6 +130,7 @@ export function parsePlanItems(value: unknown): PlanItem[] {
       sets: Math.max(1, Math.round(num(item["sets"], 3))),
       reps: Math.max(1, Math.round(num(item["reps"], 10))),
       weight: Math.max(0, num(item["weight"])),
+      time: typeof item["time"] === "number" ? item["time"] : undefined,
     }))
     .filter((item) => item.name !== "");
 }
@@ -132,6 +138,20 @@ export function parsePlanItems(value: unknown): PlanItem[] {
 /* -------------------------------- mapping --------------------------------- */
 
 export function sessionRow(session: Session, userId: string) {
+  let exercisesPayload = session.exercises;
+  if (session.location || session.feelingEmoji || session.notes || session.intensity || session.gardenId) {
+    const metaTag = {
+      id: "__meta__",
+      name: "__meta__",
+      sets: [],
+      location: session.location,
+      feelingEmoji: session.feelingEmoji,
+      notes: session.notes,
+      intensity: session.intensity,
+      gardenId: session.gardenId,
+    };
+    exercisesPayload = [...session.exercises, metaTag as unknown as Exercise];
+  }
   return {
     id: session.id,
     user_id: userId,
@@ -140,23 +160,43 @@ export function sessionRow(session: Session, userId: string) {
     minutes: session.minutes ?? null,
     completed_at: session.completedAt ?? null,
     flower: session.flower,
-    exercises: session.exercises,
+    exercises: exercisesPayload,
     plan_id: session.planId ?? null,
     plan_name: session.planName ?? null,
   };
 }
 
 export function sessionFromRow(row: SessionRow): Session {
+  const rawList = Array.isArray(row.exercises) ? row.exercises : [];
+  const meta = rawList.find(
+    (x) => isRecord(x) && (x["name"] === "__meta__" || x["id"] === "__meta__"),
+  ) as Record<string, unknown> | undefined;
+
+  const realRaw = rawList.filter(
+    (x) => !isRecord(x) || (x["name"] !== "__meta__" && x["id"] !== "__meta__"),
+  );
+  const realExercises = parseExercises(realRaw);
+
   const session: Session = {
     id: row.id,
     date: row.date,
     activity: row.activity,
     minutes: row.minutes ?? undefined,
-    exercises: parseExercises(row.exercises),
+    exercises: realExercises,
     flower: row.flower || "🌷",
     planId: row.plan_id ?? undefined,
     planName: row.plan_name ?? undefined,
   };
+  if (meta) {
+    if (typeof meta["location"] === "string") session.location = meta["location"];
+    if (typeof meta["feelingEmoji"] === "string") session.feelingEmoji = meta["feelingEmoji"];
+    if (typeof meta["notes"] === "string") session.notes = meta["notes"];
+    if (meta["intensity"] === "Gentle" || meta["intensity"] === "Moderate" || meta["intensity"] === "Intense") {
+      session.intensity = meta["intensity"];
+    }
+    const g = gardenOf(meta["gardenId"]);
+    if (g) session.gardenId = g;
+  }
   if (row.completed_at) session.completedAt = row.completed_at;
   return session;
 }

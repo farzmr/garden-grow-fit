@@ -1,8 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Check, Plus, Trash2, X } from "lucide-react";
-import { EXERCISE_LIBRARY, imageFor, lastFor, setState, today, uid, useStore, type Exercise } from "@/lib/store";
+import { Check, ExternalLink, Plus, Trash2, X } from "lucide-react";
+import { FinishSessionModal } from "@/components/FinishSessionModal";
+import { FlowerIcon } from "@/components/FlowerIcon";
+import { InspirationalBanner } from "@/components/InspirationalBanner";
+import { EXERCISE_LIBRARY, imageFor, lastFor, lastLoggedSetsFor, setState, today, uid, useStore, type Exercise } from "@/lib/store";
 
 export const Route = createFileRoute("/workout")({
   head: () => ({
@@ -27,6 +30,7 @@ function Workout() {
   const [adding, setAdding] = useState(false);
   const [custom, setCustom] = useState("");
   const [planted, setPlanted] = useState(false);
+  const [showFinishModal, setShowFinishModal] = useState(false);
   const [finishedFlower, setFinishedFlower] = useState(s.activeFlower ?? s.flower);
   const list = s.active ?? [];
   const total = list.reduce((n, e) => n + e.sets.length, 0);
@@ -34,14 +38,32 @@ function Workout() {
 
   const add = (name: string) => {
     if (!name.trim()) return;
-    update((l) => [...l, { id: uid(), name: name.trim(), sets: [{ weight: 10, reps: 10, done: false }, { weight: 10, reps: 10, done: false }, { weight: 10, reps: 10, done: false }] }]);
+    const exInfo = imageFor(name.trim());
+    const isDuration = exInfo?.trackingType === "duration";
+    const defaultTime = exInfo?.timeUnit === "min" ? 20 : 60;
+    const prev = lastLoggedSetsFor(s.sessions, name.trim());
+    const initialSets = prev && prev.length > 0
+      ? prev.map((p) => ({ weight: p.weight, reps: p.reps, time: p.time, done: false }))
+      : isDuration
+        ? [
+            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+          ]
+        : [
+            { weight: 10, reps: 10, done: false },
+            { weight: 10, reps: 10, done: false },
+            { weight: 10, reps: 10, done: false },
+          ];
+    update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets }]);
     setAdding(false);
     setCustom("");
   };
 
-  const finish = () => {
+  const finish = (details: { feelingEmoji?: string; notes?: string }) => {
     const completedAt = new Date().toISOString();
     const plantedFlower = s.activeFlower ?? s.flower;
+    const minutes = s.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000)) : undefined;
     setState((x) => ({
       ...x,
       active: null,
@@ -49,9 +71,30 @@ function Workout() {
       activeFlower: undefined,
       activePlanName: undefined,
       activePlanId: undefined,
-      sessions: [...x.sessions, { id: uid(), date: today(), completedAt, planId: x.activePlanId, planName: x.activePlanName, minutes: x.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(x.activeStartedAt).getTime()) / 60000)) : undefined, activity: "Workout", exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length), flower: plantedFlower }],
+      activeActivity: undefined,
+      activeLocation: undefined,
+      activeIntensity: undefined,
+      sessions: [
+        ...x.sessions,
+        {
+          id: uid(),
+          date: today(),
+          completedAt,
+          planId: x.activePlanId,
+          planName: x.activePlanName,
+          minutes,
+          location: x.activeLocation,
+          feelingEmoji: details.feelingEmoji,
+          notes: details.notes,
+          activity: "Workout",
+          exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length),
+          flower: plantedFlower,
+          gardenId: x.mainGarden,
+        },
+      ],
     }));
     setFinishedFlower(plantedFlower);
+    setShowFinishModal(false);
     setPlanted(true);
     setTimeout(() => nav({ to: "/" }), 1600);
   };
@@ -66,13 +109,25 @@ function Workout() {
 
   return (
     <div className="space-y-5 px-5 pt-10">
-      <header>
-        <h1 className="font-display text-4xl">{s.activePlanName ?? "Workout"}</h1>
-        <Button variant="ghost" onClick={() => nav({ to: "/" })}>Save & return to garden</Button>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+      <header className="space-y-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-display text-4xl">{s.activePlanName ?? "Workout"}</h1>
+            {s.activeLocation && (
+              <p className="mt-1 text-xs font-medium text-muted-foreground">📍 {s.activeLocation}</p>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => nav({ to: "/" })}>
+            Save & return
+          </Button>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{done}/{total} sets done</p>
+        <InspirationalBanner />
+        <div>
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full bg-primary transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{done}/{total} sets done</p>
+        </div>
       </header>
 
       {list.length === 0 && <p className="rounded-3xl bg-card p-6 text-center text-muted-foreground shadow-soft">Nothing planned today — add an exercise below.</p>}
@@ -81,19 +136,48 @@ function Workout() {
         const info = imageFor(ex.name);
         const last = lastFor(s.sessions, ex.name);
         const allDone = ex.sets.every((x) => x.done);
+        const isDuration = info?.trackingType === "duration";
+        const unit = info?.timeUnit ?? "sec";
+        const defaultDuration = unit === "min" ? 20 : 60;
         return (
           <article key={ex.id} className={`overflow-hidden rounded-3xl bg-card shadow-soft ${allDone ? "opacity-70" : ""}`}>
             {info?.image && (
               <div className="overflow-hidden bg-muted">
-                <img src={info.image} alt={ex.name} loading="lazy" width={816} height={816} className="animate-rep mx-auto h-48 w-48 object-contain" />
+                <img src={info.image} alt={ex.name} loading="lazy" width={816} height={816} className="mx-auto h-48 w-48 object-contain" />
               </div>
             )}
             <div className="space-y-3 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h2 className="text-lg font-semibold">{ex.name}</h2>
-                  {info && <p className="text-xs text-muted-foreground">{info.tip}</p>}
-                  {last && <p className="mt-1 text-xs text-primary">Last: {last.best}kg on {last.date}</p>}
+                  {info && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <span className="font-semibold text-foreground">Avoid: </span>
+                      {info.avoid ?? info.tip}
+                    </p>
+                  )}
+                  {last && (
+                    <p className="mt-1 text-xs text-primary">
+                      Last: {last.best} {last.unit ?? "kg"} on {last.date}
+                    </p>
+                  )}
+                  {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Guides:</span>
+                      {info.myoAtlasLinks.map((link) => (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/70 px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted hover:border-primary/40 transition-colors"
+                        >
+                          <span>{link.name}</span>
+                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button aria-label="Remove exercise" onClick={() => update((l) => l.filter((e) => e.id !== ex.id))} className="p-2 text-muted-foreground"><Trash2 className="h-4 w-4" /></Button>
               </div>
@@ -101,8 +185,18 @@ function Workout() {
                 {ex.sets.map((set, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="w-6 text-sm text-muted-foreground">{i + 1}</span>
-                    <NumField value={set.weight} suffix="kg" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))} />
-                    <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
+                    {isDuration ? (
+                      <NumField
+                        value={set.time ?? set.reps ?? defaultDuration}
+                        suffix={unit}
+                        onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, time: v, reps: v, weight: 0 } : z) } : e))}
+                      />
+                    ) : (
+                      <>
+                        <NumField value={set.weight} suffix="kg" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))} />
+                        <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
+                      </>
+                    )}
                     <Button
                       aria-label="Complete set"
                       onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, done: !z.done } : z) } : e))}
@@ -115,7 +209,19 @@ function Workout() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: [...e.sets, { ...(e.sets.at(-1) ?? { weight: 10, reps: 10 }), done: false }] } : e))} className="flex-1 rounded-xl bg-muted py-2 text-sm">+ Set</Button>
+                <Button
+                  onClick={() => update((l) => l.map((e) => {
+                    if (e.id !== ex.id) return e;
+                    const lastSet = e.sets.at(-1);
+                    const newSet = isDuration
+                      ? { weight: 0, reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration, time: lastSet?.time ?? lastSet?.reps ?? defaultDuration, done: false }
+                      : { ...(lastSet ?? { weight: 10, reps: 10 }), done: false };
+                    return { ...e, sets: [...e.sets, newSet] };
+                  }))}
+                  className="flex-1 rounded-xl bg-muted py-2 text-sm"
+                >
+                  + Set
+                </Button>
                 <Button onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z) => ({ ...z, done: !allDone })) } : e))} className="flex-1 rounded-xl bg-accent py-2 text-sm font-semibold text-accent-foreground">{allDone ? "Undo" : "Complete all"}</Button>
               </div>
             </div>
@@ -140,9 +246,27 @@ function Workout() {
         <Button onClick={() => setAdding(true)} className="flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-border py-4 text-muted-foreground"><Plus className="h-4 w-4" /> Add exercise</Button>
       )}
 
-      <Button disabled={done === 0} onClick={finish} className="w-full rounded-3xl bg-primary py-5 text-lg font-semibold text-primary-foreground shadow-soft disabled:opacity-40">
-        Finish & plant {s.activeFlower ?? s.flower}
+      <Button
+        disabled={done === 0}
+        onClick={() => setShowFinishModal(true)}
+        className="flex items-center justify-center gap-2 w-full rounded-3xl bg-primary py-5 text-lg font-semibold text-primary-foreground shadow-soft disabled:opacity-40"
+      >
+        <span>Finish & plant</span>
+        <FlowerIcon flower={s.activeFlower ?? s.flower} className="h-6 w-6" />
       </Button>
+
+      <FinishSessionModal
+        isOpen={showFinishModal}
+        flower={s.activeFlower ?? s.flower}
+        activityName={s.activePlanName ?? "Workout"}
+        durationMinutes={
+          s.activeStartedAt
+            ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
+            : undefined
+        }
+        onClose={() => setShowFinishModal(false)}
+        onConfirm={finish}
+      />
     </div>
   );
 }

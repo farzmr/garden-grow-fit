@@ -114,7 +114,17 @@
 
 @keyframes sway { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes bloom { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1) rotate(0); } }
+@keyframes flower-bloom-spring {
+  0% { transform: scale(0.1) rotate(-20deg); opacity: 0; }
+  60% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  85% { transform: scale(0.96) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
 @keyframes rep { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(6px) scale(0.97); } }
+
+.animate-bloom-in {
+  animation: flower-bloom-spring 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
 
 .garden-flowers { inset: 36% 23% 31% 22%; }
 .garden-flower { filter: drop-shadow(0 3px 2px var(--soil)); }

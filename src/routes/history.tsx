@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Clock3, Dumbbell, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock3, Dumbbell, MapPin, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStore, type Session } from "@/lib/store";
+import { FlowerIcon } from "@/components/FlowerIcon";
+import { deleteSession, imageFor, useStore, type Session } from "@/lib/store";
 
 export const Route = createFileRoute("/history")({
   head: () => ({ meta: [
@@ -44,8 +45,82 @@ function HistoryPage(){
 
 function SessionDetails({session,close}:{session:Session;close:()=>void}){
   return <article role="region" aria-label={`${session.activity} details`} className="border-t-2 border-primary pb-3 pt-4">
-    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted-foreground">{new Date(`${session.date}T12:00`).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"})}</p><h2 className="mt-1 break-words font-display text-2xl">{session.flower} {session.planName ?? session.activity}</h2>{session.sample&&<p className="mt-1 text-xs font-medium text-primary">Sample workout</p>}</div><Button size="icon" variant="ghost" aria-label="Close details" onClick={close}><X /></Button></div>
-    <div className="mt-4 flex gap-4 border-y border-border py-3 text-sm text-muted-foreground">{session.completedAt&&<span className="flex items-center gap-1"><Clock3 className="h-4 w-4" />{new Date(session.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span>}{session.minutes!==undefined&&<span>{session.minutes} min</span>}</div>
-    {session.exercises.length?<div className="divide-y divide-border">{session.exercises.map(ex=>{const maxWeight=Math.max(0,...ex.sets.map(set=>set.weight));const maxReps=Math.max(0,...ex.sets.map(set=>set.reps));return <section key={ex.id} className="py-3"><div className="flex items-center justify-between gap-3"><h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold"><Dumbbell className="h-4 w-4 shrink-0 text-primary" />{ex.name}</h3><span className="shrink-0 text-xs text-muted-foreground">{ex.sets.length} sets</span></div><p className="mt-1 text-xs font-medium">Max {maxWeight} kg · Max {maxReps} reps</p><p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">{ex.sets.map((set,index)=>`Set ${index+1}: ${set.weight} kg × ${set.reps}`).join(" · ")}</p></section>})}</div>:<p className="py-4 text-sm text-muted-foreground">No exercises recorded for this activity.</p>}
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{new Date(`${session.date}T12:00`).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"})}</p>
+        <h2 className="mt-1 flex items-center gap-2 break-words font-display text-2xl">
+          <FlowerIcon flower={session.flower} className="h-7 w-7" />
+          <span>{session.planName ?? session.activity}</span>
+        </h2>
+        {session.sample&&<p className="mt-1 text-xs font-medium text-primary">Sample workout</p>}
+      </div>
+      <div className="flex items-center gap-1">
+        {!session.sample && (
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label="Delete session"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              deleteSession(session.id);
+              close();
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+        <Button size="icon" variant="ghost" aria-label="Close details" onClick={close}><X className="h-4 w-4" /></Button>
+      </div>
+    </div>
+    <div className="mt-4 flex flex-wrap gap-4 border-y border-border py-3 text-sm text-muted-foreground">
+      {session.completedAt&&<span className="flex items-center gap-1"><Clock3 className="h-4 w-4" />{new Date(session.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span>}
+      {session.minutes!==undefined&&<span>{session.minutes} min</span>}
+      {session.location&&<span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{session.location}</span>}
+    </div>
+    {(session.feelingEmoji || session.notes || session.intensity) && (
+      <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-muted/50 p-3">
+        {session.feelingEmoji && <span className="text-2xl shrink-0">{session.feelingEmoji}</span>}
+        <div className="min-w-0 flex-1">
+          {session.intensity && (
+            <span className="mb-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+              {session.intensity}
+            </span>
+          )}
+          {session.notes && <p className="italic text-xs text-muted-foreground leading-relaxed">"{session.notes}"</p>}
+        </div>
+      </div>
+    )}
+    {session.exercises.length ? (
+      <div className="divide-y divide-border">
+        {session.exercises.map(ex => {
+          const info = imageFor(ex.name);
+          const isDuration = info?.trackingType === "duration";
+          const unit = info?.timeUnit ?? "sec";
+          const maxWeight = Math.max(0, ...ex.sets.map(set => set.weight));
+          const maxReps = Math.max(0, ...ex.sets.map(set => set.reps));
+          const maxTime = Math.max(0, ...ex.sets.map(set => set.time ?? set.reps ?? set.weight));
+          return (
+            <section key={ex.id} className="py-3">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                  <Dumbbell className="h-4 w-4 shrink-0 text-primary" />{ex.name}
+                </h3>
+                <span className="shrink-0 text-xs text-muted-foreground">{ex.sets.length} sets</span>
+              </div>
+              <p className="mt-1 text-xs font-medium">
+                {isDuration ? `Best: ${maxTime} ${unit}` : `Max ${maxWeight} kg · Max ${maxReps} reps`}
+              </p>
+              <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">
+                {isDuration
+                  ? ex.sets.map((set, index) => `Set ${index + 1}: ${set.time ?? set.reps ?? set.weight} ${unit}`).join(" · ")
+                  : ex.sets.map((set, index) => `Set ${index + 1}: ${set.weight} kg × ${set.reps}`).join(" · ")}
+              </p>
+            </section>
+          );
+        })}
+      </div>
+    ) : session.activity === "Workout" ? (
+      <p className="py-4 text-sm text-muted-foreground">No exercises recorded for this activity.</p>
+    ) : null}
   </article>;
 }
