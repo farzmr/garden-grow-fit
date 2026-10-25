@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, CloudUpload, KeyRound, Loader2, LogOut, MailCheck } from "lucide-react";
+import { ArrowRight, CloudUpload, KeyRound, Loader2, LogOut } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import {
   createAccount,
   currentAccount,
-  sendPasswordReset,
   setSkippedAuth,
   signIn,
   signInWithGoogle,
@@ -87,16 +86,6 @@ function Auth() {
     }
     setSkippedAuth(false);
     void nav({ to: "/" });
-  };
-
-  const remind = async () => {
-    setNote(null);
-    const result = await sendPasswordReset(email);
-    setNote(
-      result.error
-        ? { kind: "error", text: result.error }
-        : { kind: "ok", text: "If that address has an account, a reset link is on its way." },
-    );
   };
 
   if (signedIn) {
@@ -204,22 +193,20 @@ function Auth() {
       </form>
 
       <div className="space-y-2">
-        {mode === "in" && (
-          <Button variant="ghost" className="w-full" onClick={() => void remind()} disabled={!email.trim()}>
-            <MailCheck />
-            Email me a new password
+        <p className="text-center text-sm text-muted-foreground">
+          {mode === "in" ? "Don't have an account?" : "Already have an account?"}
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto p-0 pl-1.5 text-sm font-semibold"
+            onClick={() => {
+              setNote(null);
+              setMode(mode === "in" ? "up" : "in");
+            }}
+          >
+            {mode === "in" ? "Sign up" : "Sign in"}
           </Button>
-        )}
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => {
-            setNote(null);
-            setMode(mode === "in" ? "up" : "in");
-          }}
-        >
-          {mode === "in" ? "I need a new account" : "I already have an account"}
-        </Button>
+        </p>
         <Button
           type="button"
           variant="ghost"
