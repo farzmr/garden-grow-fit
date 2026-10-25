@@ -42,7 +42,6 @@ function HistoryPage(){
           const key = dateKey(date);
           const events = eventsByDate[key] ?? [];
           const inMonth = date.getMonth() === month.getMonth();
-          const emoji = events.find((e) => e.feelingEmoji)?.feelingEmoji;
           return (
             <div
               key={key}
@@ -50,10 +49,7 @@ function HistoryPage(){
                 index % 7 === 6 ? "border-r-0" : ""
               } ${inMonth ? "" : "bg-muted/30 text-muted-foreground"}`}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px]">{date.getDate()}</span>
-                {emoji && <span className="text-xs leading-none">{emoji}</span>}
-              </div>
+              <span className="text-[10px]">{date.getDate()}</span>
               <div className="mt-1 space-y-1">
                 {events.slice(0, 2).map((event) => (
                   <Button
@@ -81,7 +77,6 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
       <div className="min-w-0">
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>{new Date(`${session.date}T12:00`).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"})}</span>
-          {session.feelingEmoji && <span className="text-base leading-none" title="Feeling">{session.feelingEmoji}</span>}
         </p>
         <h2 className="mt-1 flex items-center gap-2 break-words font-display text-2xl">
           <FlowerIcon flower={session.flower} className="h-7 w-7" />
@@ -112,15 +107,16 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
         <span className="flex items-center gap-1.5">
           <Clock3 className="h-4 w-4" />
           <span>{new Date(session.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span>
-          {session.feelingEmoji && <span className="text-base leading-none" title="Feeling">{session.feelingEmoji}</span>}
         </span>
       )}
       {session.minutes!==undefined&&<span>{session.minutes} min</span>}
       {session.location&&<span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{session.location}</span>}
+      {session.feelingEmoji && (
+        <span className="ml-auto text-xl leading-none" title="Feeling">{session.feelingEmoji}</span>
+      )}
     </div>
-    {(session.feelingEmoji || session.notes || session.intensity) && (
+    {(session.notes || session.intensity) && (
       <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-muted/50 p-3">
-        {session.feelingEmoji && <span className="text-2xl shrink-0">{session.feelingEmoji}</span>}
         <div className="min-w-0 flex-1">
           {session.intensity && (
             <span className="mb-1 inline-block rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
