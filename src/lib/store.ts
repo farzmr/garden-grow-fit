@@ -934,31 +934,59 @@ export type State = {
   starterPlansVersion?: number;
 };
 
-const p = (name: string, sets = 3, reps = 10, weight = 10): PlanItem => ({ name, sets, reps, weight });
-const STARTER_PLAN: WorkoutPlan = {
-  id: "oct-17-full-body",
-  name: "Full body · Oct 17 routine",
-  difficulty: "Intermediate",
-  items: [
-    p("Back Squat", 3, 10, 0),
-    p("Bench Press", 3, 7, 0),
-    p("Incline Leg Press", 3, 8, 20),
-    p("Lat Pulldown", 3, 10, 30),
-    p("Leg Extension", 3, 10, 11),
-    p("Lat Pulldown Machine", 3, 8, 11),
-    p("Chest Press Machine", 3, 8, 0),
-    p("Hip Adduction", 3, 10, 0),
-    p("Hip Abduction", 3, 10, 0),
-    p("Back Extension", 2, 10, 0),
-    p("StairMaster", 1, 3, 0),
-    p("Elliptical", 1, 5, 0),
-  ],
-};
-const EXTRA_PLANS: WorkoutPlan[] = [
-  { id: "bloom-lower-body", name: "Lower body & glutes", difficulty: "Beginner", items: [p("Incline Leg Press",3,10,0),p("Glute Bridge",3,12,0),p("Leg Curl",3,10,0),p("Hip Abduction",2,12,0),p("Walking Lunge",2,10,0)] },
-  { id: "bloom-upper-body", name: "Upper body strength", difficulty: "Intermediate", items: [p("Bench Press",3,8,0),p("Lat Pulldown",3,10,0),p("Seated Cable Row",3,10,0),p("Shoulder Press",3,8,0),p("Dumbbell Row",3,10,0)] },
-  { id: "bloom-gentle-full-body", name: "Gentle full body", difficulty: "Beginner", items: [p("Elliptical",1,10,0),p("Incline Leg Press",2,12,0),p("Chest Press Machine",2,10,0),p("Seated Cable Row",2,10,0),p("Glute Bridge",2,12,0)] },
+const p = (name: string, sets = 3, reps = 10, weight = 10, time?: number): PlanItem => ({
+  name,
+  sets,
+  reps,
+  weight,
+  ...(time !== undefined ? { time } : {}),
+});
+
+export const DEFAULT_PLANS: WorkoutPlan[] = [
+  {
+    id: "plan-full-body",
+    name: "Full Body",
+    difficulty: "Intermediate",
+    items: [
+      p("Back Squat", 3, 10, 20),
+      p("Bench Press", 3, 8, 15),
+      p("Lat Pulldown", 3, 10, 25),
+      p("Shoulder Press", 3, 10, 8),
+      p("Glute Bridge", 3, 12, 15),
+      p("Plank", 3, 1, 0, 45),
+    ],
+  },
+  {
+    id: "plan-lower-body",
+    name: "Lower Body",
+    difficulty: "Beginner",
+    items: [
+      p("Back Squat", 3, 10, 25),
+      p("Incline Leg Press", 3, 10, 30),
+      p("Walking Lunge", 3, 12, 8),
+      p("Glute Bridge", 3, 12, 20),
+      p("Leg Curl", 3, 10, 15),
+      p("Standing Calf Raise", 3, 15, 10),
+    ],
+  },
+  {
+    id: "plan-upper-body",
+    name: "Upper Body",
+    difficulty: "Intermediate",
+    items: [
+      p("Bench Press", 3, 8, 20),
+      p("Lat Pulldown", 3, 10, 30),
+      p("Seated Cable Row", 3, 10, 25),
+      p("Shoulder Press", 3, 8, 10),
+      p("Dumbbell Bicep Curl", 3, 10, 8),
+      p("Cable Tricep Pushdown", 3, 12, 15),
+      p("Dumbbell Lateral Raise", 3, 12, 6),
+    ],
+  },
 ];
+
+const STARTER_PLAN: WorkoutPlan = DEFAULT_PLANS[0]!;
+const EXTRA_PLANS: WorkoutPlan[] = DEFAULT_PLANS.slice(1);
 const SAMPLE_SESSIONS: Session[] = [
   {
     id: "sample-session-1", date: "2026-09-28", completedAt: "2026-09-28T17:45:00", activity: "Workout", minutes: 52, flower: "tulip", sample: true,
@@ -980,8 +1008,8 @@ const DEFAULT: State = {
   mainGarden: "wild-meadow",
   sessions: SAMPLE_SESSIONS,
   active: null,
-  plans: [STARTER_PLAN, ...EXTRA_PLANS],
-  starterPlansVersion: 1,
+  plans: DEFAULT_PLANS,
+  starterPlansVersion: 2,
   plan: {
     0: [],
     1: [p("Back Squat", 4, 8, 30), p("Walking Lunge", 3, 12, 6), p("Glute Bridge", 3, 15, 20)],
@@ -1011,13 +1039,14 @@ function load() {
         localStorage.setItem("bloomfit_cleaned_2026_10_24", "1");
         localStorage.setItem(KEY, JSON.stringify(state));
       }
-      if (saved.starterPlansVersion !== 1) {
-        const existing = saved.plans ?? [STARTER_PLAN];
-        state.plans = [...existing, ...EXTRA_PLANS.filter(plan => !existing.some(p => p.id === plan.id))];
-        state.starterPlansVersion = 1;
+      if (saved.starterPlansVersion !== 2) {
+        state.plans = DEFAULT_PLANS;
+        state.starterPlansVersion = 2;
         localStorage.setItem(KEY, JSON.stringify(state));
-      } else if (saved.plans) {
+      } else if (saved.plans && saved.plans.length > 0) {
         state.plans = saved.plans;
+      } else {
+        state.plans = DEFAULT_PLANS;
       }
     }
   } catch {}

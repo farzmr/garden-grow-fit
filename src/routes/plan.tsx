@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EXERCISE_LIBRARY, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
+import { DEFAULT_PLANS, EXERCISE_LIBRARY, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [
@@ -18,12 +18,13 @@ export const Route = createFileRoute("/plan")({
 
 function Plans() {
   const s = useStore();
+  const plans = s.plans.length > 0 ? s.plans : DEFAULT_PLANS;
   const [selected, setSelected] = useState<string | null>(null);
-  const current = s.plans.find(plan => plan.id === selected);
-  const save = (plan: WorkoutPlan) => setState(x => ({...x, plans:x.plans.map(p => p.id === plan.id ? plan : p)}));
+  const current = plans.find(plan => plan.id === selected);
+  const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: (x.plans.length ? x.plans : DEFAULT_PLANS).map(p => p.id === plan.id ? plan : p)}));
   const createPlan = () => {
     const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[], difficulty:"Beginner" };
-    setState(x => ({...x, plans:[...x.plans, plan]}));
+    setState(x => ({...x, plans: [...(x.plans.length ? x.plans : DEFAULT_PLANS), plan]}));
     setSelected(plan.id);
   };
 
@@ -193,7 +194,7 @@ function Plans() {
       </div>
 
       <div className="space-y-3">
-        {s.plans.map((plan) => {
+        {plans.map((plan) => {
           const used = lastUsedFor(s.sessions, plan);
           return (
             <Button

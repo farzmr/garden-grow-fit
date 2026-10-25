@@ -37,7 +37,39 @@ function HistoryPage(){
     <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
       <div className="flex items-center justify-between border-b border-border p-3"><Button size="icon" variant="ghost" aria-label="Previous month" onClick={()=>move(-1)}><ChevronLeft /></Button><h2 className="font-semibold">{month.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</h2><Button size="icon" variant="ghost" aria-label="Next month" onClick={()=>move(1)}><ChevronRight /></Button></div>
       <div className="grid grid-cols-7 border-b border-border bg-muted/40">{WEEKDAYS.map(day=><div key={day} className="py-2 text-center text-[10px] font-semibold text-muted-foreground">{day.slice(0,1)}</div>)}</div>
-      <div className="grid grid-cols-7">{cells.map((date,index)=>{const key=dateKey(date);const events=eventsByDate[key]??[];const inMonth=date.getMonth()===month.getMonth();return <div key={key} className={`min-h-20 border-b border-r border-border p-1 ${index%7===6?"border-r-0":""} ${inMonth?"":"bg-muted/30 text-muted-foreground"}`}><span className="text-[10px]">{date.getDate()}</span><div className="mt-1 space-y-1">{events.slice(0,2).map(event=><Button key={event.id} variant="ghost" onClick={()=>setSelected(event)} className="h-auto w-full justify-start overflow-hidden rounded-md bg-secondary px-1.5 py-1 text-left text-[9px] leading-tight text-secondary-foreground"><span className="truncate">{event.activity}</span></Button>)}</div></div>})}</div>
+      <div className="grid grid-cols-7">
+        {cells.map((date, index) => {
+          const key = dateKey(date);
+          const events = eventsByDate[key] ?? [];
+          const inMonth = date.getMonth() === month.getMonth();
+          const emoji = events.find((e) => e.feelingEmoji)?.feelingEmoji;
+          return (
+            <div
+              key={key}
+              className={`min-h-20 border-b border-r border-border p-1 ${
+                index % 7 === 6 ? "border-r-0" : ""
+              } ${inMonth ? "" : "bg-muted/30 text-muted-foreground"}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px]">{date.getDate()}</span>
+                {emoji && <span className="text-xs leading-none">{emoji}</span>}
+              </div>
+              <div className="mt-1 space-y-1">
+                {events.slice(0, 2).map((event) => (
+                  <Button
+                    key={event.id}
+                    variant="ghost"
+                    onClick={() => setSelected(event)}
+                    className="h-auto w-full justify-start overflow-hidden rounded-md bg-secondary px-1.5 py-1 text-left text-[9px] leading-tight text-secondary-foreground"
+                  >
+                    <span className="truncate">{event.activity}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </section>
     {selected&&<SessionDetails session={selected} close={()=>setSelected(null)} />}
   </div>;
@@ -47,7 +79,10 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
   return <article role="region" aria-label={`${session.activity} details`} className="border-t-2 border-primary pb-3 pt-4">
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{new Date(`${session.date}T12:00`).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"})}</p>
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>{new Date(`${session.date}T12:00`).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"})}</span>
+          {session.feelingEmoji && <span className="text-base leading-none" title="Feeling">{session.feelingEmoji}</span>}
+        </p>
         <h2 className="mt-1 flex items-center gap-2 break-words font-display text-2xl">
           <FlowerIcon flower={session.flower} className="h-7 w-7" />
           <span>{session.planName ?? session.activity}</span>
@@ -72,8 +107,14 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
         <Button size="icon" variant="ghost" aria-label="Close details" onClick={close}><X className="h-4 w-4" /></Button>
       </div>
     </div>
-    <div className="mt-4 flex flex-wrap gap-4 border-y border-border py-3 text-sm text-muted-foreground">
-      {session.completedAt&&<span className="flex items-center gap-1"><Clock3 className="h-4 w-4" />{new Date(session.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span>}
+    <div className="mt-4 flex flex-wrap items-center gap-4 border-y border-border py-3 text-sm text-muted-foreground">
+      {session.completedAt && (
+        <span className="flex items-center gap-1.5">
+          <Clock3 className="h-4 w-4" />
+          <span>{new Date(session.completedAt).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"})}</span>
+          {session.feelingEmoji && <span className="text-base leading-none" title="Feeling">{session.feelingEmoji}</span>}
+        </span>
+      )}
       {session.minutes!==undefined&&<span>{session.minutes} min</span>}
       {session.location&&<span className="flex items-center gap-1"><MapPin className="h-4 w-4 text-primary" />{session.location}</span>}
     </div>

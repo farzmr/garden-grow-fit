@@ -186,10 +186,8 @@ function Workout() {
                     </p>
                   )}
                   {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
-                    <div className="flex items-center gap-1.5 pt-2 min-w-0 max-w-full">
-                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#5E3157]">Guides:</span>
-                      <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar min-w-0">
-                        {info.myoAtlasLinks.map((link) => (
+                    <div className="flex items-center gap-1.5 pt-2 flex-nowrap overflow-x-auto no-scrollbar min-w-0 max-w-full">
+                      {info.myoAtlasLinks.map((link) => (
                           <a
                             key={link.url}
                             href={link.url}
@@ -201,7 +199,6 @@ function Workout() {
                             <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
                           </a>
                         ))}
-                      </div>
                     </div>
                   )}
                 </div>
