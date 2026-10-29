@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FlowerIcon, FLOWER_CATALOG } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
-import { FLOWERS, planToExercises, setState, useStore, type WorkoutPlan } from "@/lib/store";
+import { FLOWERS, ensureDefaultPlans, planToExercises, setState, useStore, type WorkoutPlan } from "@/lib/store";
 
 export const Route = createFileRoute("/start")({
   head: () => ({
@@ -52,6 +52,7 @@ const PRESET_MINUTES = [30, 45, 60] as const;
 function Start() {
   const s = useStore();
   const nav = useNavigate();
+  const plans = ensureDefaultPlans(s.plans);
   const [step, setStep] = useState<"flower" | "activity">("flower");
   const [flower, setFlower] = useState(s.flower);
   const [cls, setCls] = useState<string | null>(null);
@@ -279,7 +280,7 @@ function Start() {
                   {name}
                   {name === "Workout" && (
                     <span className="text-xs font-normal opacity-80">
-                      Choose from {s.plans.length} saved plan{s.plans.length === 1 ? "" : "s"}
+                      Choose from {plans.length} saved plan{plans.length === 1 ? "" : "s"}
                     </span>
                   )}
                 </Button>
@@ -296,7 +297,7 @@ function Start() {
               </div>
 
               <div className="space-y-3">
-                {s.plans.map((plan) => (
+                {plans.map((plan) => (
                   <Button
                     key={plan.id}
                     variant="ghost"

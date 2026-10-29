@@ -985,6 +985,31 @@ export const DEFAULT_PLANS: WorkoutPlan[] = [
   },
 ];
 
+export function ensureDefaultPlans(plans?: WorkoutPlan[] | null): WorkoutPlan[] {
+  const existing = Array.isArray(plans) ? plans : [];
+  const result: WorkoutPlan[] = [];
+
+  // 1. Ensure the 3 standard starter plans are present, preserving any user customizations
+  for (const def of DEFAULT_PLANS) {
+    const found = existing.find(
+      (p) => p.id === def.id || p.name.trim().toLowerCase() === def.name.trim().toLowerCase()
+    );
+    result.push(found ? { ...found, id: def.id } : def);
+  }
+
+  // 2. Append any custom plans created by the user
+  for (const p of existing) {
+    const isDefault = DEFAULT_PLANS.some(
+      (def) => def.id === p.id || def.name.trim().toLowerCase() === p.name.trim().toLowerCase()
+    );
+    if (!isDefault) {
+      result.push(p);
+    }
+  }
+
+  return result;
+}
+
 const STARTER_PLAN: WorkoutPlan = DEFAULT_PLANS[0]!;
 const EXTRA_PLANS: WorkoutPlan[] = DEFAULT_PLANS.slice(1);
 const SAMPLE_SESSIONS: Session[] = [
@@ -1033,27 +1058,26 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const saved = JSON.parse(raw) as Partial<State>;
-      state = { ...DEFAULT, ...saved, plans: saved.plans?.length ? saved.plans : DEFAULT.plans };
+      state = { ...DEFAULT, ...saved };
       if (!localStorage.getItem("bloomfit_cleaned_2026_10_24")) {
         state.sessions = state.sessions.filter((s) => s.date !== "2026-10-24" || s.sample);
         localStorage.setItem("bloomfit_cleaned_2026_10_24", "1");
-        localStorage.setItem(KEY, JSON.stringify(state));
       }
-      if (saved.starterPlansVersion !== 2) {
-        state.plans = DEFAULT_PLANS;
-        state.starterPlansVersion = 2;
-        localStorage.setItem(KEY, JSON.stringify(state));
-      } else if (saved.plans && saved.plans.length > 0) {
-        state.plans = saved.plans;
-      } else {
-        state.plans = DEFAULT_PLANS;
-      }
+      state.plans = ensureDefaultPlans(saved.plans);
+      state.starterPlansVersion = 2;
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } else {
+      state.plans = DEFAULT_PLANS;
     }
   } catch {}
 }
 export function setState(fn: (s: State) => State) {
   load();
-  state = fn(state);
+  const next = fn(state);
+  if (next.plans) {
+    next.plans = ensureDefaultPlans(next.plans);
+  }
+  state = next;
   localStorage.setItem(KEY, JSON.stringify(state));
   listeners.forEach((l) => l());
 }
@@ -1094,6 +1118,7 @@ export function subscribeStore(listener: () => void) {
 /** Replace local state with a copy that came from the server, without marking it as a local edit. */
 export function applyRemoteState(next: State) {
   load();
+  next.plans = ensureDefaultPlans(next.plans);
   state = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));

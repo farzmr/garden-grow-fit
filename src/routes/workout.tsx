@@ -10,6 +10,7 @@ import { InspirationalBanner } from "@/components/InspirationalBanner";
 import {
   DEFAULT_PLANS,
   EXERCISE_LIBRARY,
+  ensureDefaultPlans,
   imageFor,
   lastFor,
   lastLoggedSetsFor,
@@ -56,7 +57,8 @@ function Workout() {
   const done = list.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0);
 
   // Original plan comparison
-  const originalPlan = (s.plans.length ? s.plans : DEFAULT_PLANS).find(
+  const allPlans = ensureDefaultPlans(s.plans);
+  const originalPlan = allPlans.find(
     (p) => p.id === s.activePlanId
   );
   const origExerciseNames = originalPlan ? originalPlan.items.map((i) => i.name) : [];

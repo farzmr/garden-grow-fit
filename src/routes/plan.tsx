@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
-import { DEFAULT_PLANS, EXERCISE_LIBRARY, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
+import { DEFAULT_PLANS, EXERCISE_LIBRARY, ensureDefaultPlans, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [
@@ -19,14 +19,15 @@ export const Route = createFileRoute("/plan")({
 
 function Plans() {
   const s = useStore();
-  const plans = s.plans.length > 0 ? s.plans : DEFAULT_PLANS;
+  const plans = ensureDefaultPlans(s.plans);
   const [selected, setSelected] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const current = plans.find(plan => plan.id === selected);
-  const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: (x.plans.length ? x.plans : DEFAULT_PLANS).map(p => p.id === plan.id ? plan : p)}));
+  const isDefaultPlan = current ? DEFAULT_PLANS.some(p => p.id === current.id) : false;
+  const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: ensureDefaultPlans(x.plans).map(p => p.id === plan.id ? plan : p)}));
   const createPlan = () => {
     const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[], difficulty:"Beginner" };
-    setState(x => ({...x, plans: [...(x.plans.length ? x.plans : DEFAULT_PLANS), plan]}));
+    setState(x => ({...x, plans: [...ensureDefaultPlans(x.plans), plan]}));
     setSelected(plan.id);
   };
 
@@ -175,16 +176,29 @@ function Plans() {
         }}
       />
 
-      <Button
-        variant="destructive"
-        className="w-full"
-        onClick={() => {
-          setState(x => ({ ...x, plans: x.plans.filter(p => p.id !== current.id) }));
-          setSelected(null);
-        }}
-      >
-        <Trash2 /> Delete plan
-      </Button>
+      {isDefaultPlan ? (
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => {
+            const original = DEFAULT_PLANS.find(p => p.id === current.id);
+            if (original) save(original);
+          }}
+        >
+          <RotateCcw className="h-4 w-4" /> Reset to default exercises
+        </Button>
+      ) : (
+        <Button
+          variant="destructive"
+          className="w-full gap-2"
+          onClick={() => {
+            setState(x => ({ ...x, plans: x.plans.filter(p => p.id !== current.id) }));
+            setSelected(null);
+          }}
+        >
+          <Trash2 className="h-4 w-4" /> Delete plan
+        </Button>
+      )}
     </div>
   );
 

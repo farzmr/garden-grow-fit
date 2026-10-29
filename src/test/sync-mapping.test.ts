@@ -132,7 +132,9 @@ describe("merging the backup with this device", () => {
     expect(merged.flower).toBe("🌹");
     expect(merged.mainGarden).toBe("glasshouse");
     expect(merged.sessions.map((s) => s.id)).toEqual(["sample-1", "s-1"]);
-    expect(merged.plans).toHaveLength(1);
+    // Always ensures the 3 default starter plans are present alongside the remote plan
+    expect(merged.plans).toHaveLength(4);
+    expect(merged.plans.map((p) => p.name)).toEqual(["Full Body", "Lower Body", "Upper Body", "Leg day"]);
     expect(merged.active).toBeNull();
     expect(merged.activeStartedAt).toBeUndefined();
   });

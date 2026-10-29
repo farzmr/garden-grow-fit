@@ -4,6 +4,7 @@ import { onAccountChange, type AuthAccount } from "@/lib/auth";
 import { getSupabase } from "@/integrations/supabase/client";
 import {
   applyRemoteState,
+  ensureDefaultPlans,
   readState,
   subscribeStore,
   uid,
@@ -236,7 +237,7 @@ export function mergeRemote(local: State, remote: ServerData): State {
     flower: remote.flower || local.flower,
     mainGarden: remote.mainGarden ?? local.mainGarden,
     sessions: [...samples, ...remote.sessions],
-    plans: remote.plans,
+    plans: ensureDefaultPlans(remote.plans),
     active: active ? parseExercises(active.exercises) : null,
     activeStartedAt: active?.started_at ?? undefined,
     activeFlower: active?.flower ?? undefined,
