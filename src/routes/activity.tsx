@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
 import { FlowerIcon } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
-import { LocationPicker } from "@/components/LocationPicker";
 import { setState, today, uid, useStore } from "@/lib/store";
 import { getRandomQuote } from "@/lib/quotes";
 
@@ -28,7 +27,6 @@ function ActivityTrackerPage() {
   const [planted, setPlanted] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
   const [quote] = useState(() => getRandomQuote());
-  const [editLocation, setEditLocation] = useState(false);
 
   // If there's no active activity, redirect to home
   useEffect(() => {
@@ -219,36 +217,6 @@ function ActivityTrackerPage() {
         >
           <Check className="h-5 w-5" /> Finish & Plant
         </Button>
-      </div>
-
-      <div className="pt-2">
-        {editLocation ? (
-          <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-            <LocationPicker
-              value={s.activeLocation ?? ""}
-              onChange={(loc) => setState((x) => ({ ...x, activeLocation: loc || undefined }))}
-            />
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => setEditLocation(false)}
-            >
-              Done
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
-            <span>Location: {s.activeLocation || "Not set"}</span>
-            <button
-              type="button"
-              onClick={() => setEditLocation(true)}
-              className="text-primary hover:underline"
-            >
-              {s.activeLocation ? "Change" : "+ Add location"}
-            </button>
-          </div>
-        )}
       </div>
 
       <InspirationalBanner quote={quote} />

@@ -3,9 +3,24 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Check, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
+import { PlanUpdateModal } from "@/components/PlanUpdateModal";
+import { ExercisePickerModal } from "@/components/ExercisePickerModal";
 import { FlowerIcon } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
-import { EXERCISE_LIBRARY, imageFor, lastFor, lastLoggedSetsFor, setState, today, uid, useStore, type Exercise, type WeightUnit } from "@/lib/store";
+import {
+  DEFAULT_PLANS,
+  EXERCISE_LIBRARY,
+  imageFor,
+  lastFor,
+  lastLoggedSetsFor,
+  setState,
+  today,
+  uid,
+  useStore,
+  type Exercise,
+  type WeightUnit,
+  type WorkoutPlan,
+} from "@/lib/store";
 
 export const Route = createFileRoute("/workout")({
   head: () => ({
@@ -28,13 +43,32 @@ function Workout() {
   const s = useStore();
   const nav = useNavigate();
   const [adding, setAdding] = useState(false);
-  const [custom, setCustom] = useState("");
   const [planted, setPlanted] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showPlanUpdateModal, setShowPlanUpdateModal] = useState(false);
+  const [pendingFinishDetails, setPendingFinishDetails] = useState<{
+    feelingEmoji?: string | undefined;
+    notes?: string | undefined;
+  }>({});
   const [finishedFlower, setFinishedFlower] = useState(s.activeFlower ?? s.flower);
   const list = s.active ?? [];
   const total = list.reduce((n, e) => n + e.sets.length, 0);
   const done = list.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0);
+
+  // Original plan comparison
+  const originalPlan = (s.plans.length ? s.plans : DEFAULT_PLANS).find(
+    (p) => p.id === s.activePlanId
+  );
+  const origExerciseNames = originalPlan ? originalPlan.items.map((i) => i.name) : [];
+  const currentExerciseNames = list.map((e) => e.name);
+
+  const addedExercises = originalPlan
+    ? currentExerciseNames.filter((name) => !origExerciseNames.includes(name))
+    : [];
+  const removedExercises = originalPlan
+    ? origExerciseNames.filter((name) => !currentExerciseNames.includes(name))
+    : [];
+  const hasPlanChanges = Boolean(originalPlan && (addedExercises.length > 0 || removedExercises.length > 0));
 
   const add = (name: string) => {
     if (!name.trim()) return;
@@ -57,7 +91,6 @@ function Workout() {
           ];
     update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets, weightUnit: "kg" }]);
     setAdding(false);
-    setCustom("");
   };
 
   const toggleWeightUnit = (exId: string) => {
@@ -83,7 +116,90 @@ function Workout() {
     );
   };
 
-  const finish = (details: { feelingEmoji?: string; notes?: string }) => {
+  const handleFinishModalConfirm = (details: { feelingEmoji?: string; notes?: string }) => {
+    setShowFinishModal(false);
+    setPendingFinishDetails(details);
+    if (hasPlanChanges && originalPlan) {
+      setShowPlanUpdateModal(true);
+    } else {
+      completeFinish(details);
+    }
+  };
+
+  const handleUpdatePlan = () => {
+    if (originalPlan) {
+      const updatedPlan: WorkoutPlan = {
+        ...originalPlan,
+        items: list.map((ex) => {
+          const existing = originalPlan.items.find((it) => it.name === ex.name);
+          if (existing) {
+            return {
+              ...existing,
+              sets: ex.sets.length > 0 ? ex.sets.length : existing.sets,
+            };
+          }
+          const exInfo = imageFor(ex.name);
+          const isDur = exInfo?.trackingType === "duration";
+          return {
+            name: ex.name,
+            sets: ex.sets.length || 3,
+            reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
+            weight: ex.sets[0]?.weight || 10,
+            ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
+          };
+        }),
+      };
+      setState((x) => ({
+        ...x,
+        plans: (x.plans.length ? x.plans : DEFAULT_PLANS).map((p) =>
+          p.id === updatedPlan.id ? updatedPlan : p
+        ),
+      }));
+    }
+    setShowPlanUpdateModal(false);
+    completeFinish(pendingFinishDetails);
+  };
+
+  const handleSaveAsNewPlan = (newPlanName: string) => {
+    if (originalPlan) {
+      const newPlan: WorkoutPlan = {
+        id: uid(),
+        name: newPlanName.trim() || `${originalPlan.name} (Updated)`,
+        difficulty: originalPlan.difficulty ?? "Intermediate",
+        items: list.map((ex) => {
+          const existing = originalPlan.items.find((it) => it.name === ex.name);
+          if (existing) {
+            return {
+              ...existing,
+              sets: ex.sets.length > 0 ? ex.sets.length : existing.sets,
+            };
+          }
+          const exInfo = imageFor(ex.name);
+          const isDur = exInfo?.trackingType === "duration";
+          return {
+            name: ex.name,
+            sets: ex.sets.length || 3,
+            reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
+            weight: ex.sets[0]?.weight || 10,
+            ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
+          };
+        }),
+      };
+      setState((x) => ({
+        ...x,
+        plans: [...(x.plans.length ? x.plans : DEFAULT_PLANS), newPlan],
+      }));
+    }
+    setShowPlanUpdateModal(false);
+    completeFinish(pendingFinishDetails);
+  };
+
+  const handleDiscardChanges = () => {
+    setShowPlanUpdateModal(false);
+    completeFinish(pendingFinishDetails);
+  };
+
+  const completeFinish = (details?: { feelingEmoji?: string; notes?: string }) => {
     const completedAt = new Date().toISOString();
     const plantedFlower = s.activeFlower ?? s.flower;
     const minutes = s.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000)) : undefined;
@@ -107,8 +223,8 @@ function Workout() {
           planName: x.activePlanName,
           minutes,
           location: x.activeLocation,
-          feelingEmoji: details.feelingEmoji,
-          notes: details.notes,
+          feelingEmoji: details?.feelingEmoji,
+          notes: details?.notes,
           activity: "Workout",
           exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length),
           flower: plantedFlower,
@@ -117,7 +233,6 @@ function Workout() {
       ],
     }));
     setFinishedFlower(plantedFlower);
-    setShowFinishModal(false);
     setPlanted(true);
     setTimeout(() => nav({ to: "/" }), 1600);
   };
@@ -170,47 +285,49 @@ function Workout() {
                 <img src={info.image} alt={ex.name} loading="lazy" width={816} height={816} className="mx-auto h-48 w-48 object-contain" />
               </div>
             )}
-            <div className="space-y-3 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold tracking-tight text-[#2D1B2E]">{ex.name}</h2>
-                  {info && (
-                    <p className="mt-1 text-xs leading-relaxed text-[#2D1B2E]/70">
-                      <span className="font-semibold text-[#4A1D45]">Avoid: </span>
-                      {info.avoid ?? info.tip}
-                    </p>
-                  )}
-                  {last && (
-                    <p className="mt-1 text-xs font-medium text-[#5E3157]/70">
-                      Last: <span className="font-semibold text-[#4A1D45]">{last.best} {last.unit ?? "kg"}</span> on {last.date}
-                    </p>
-                  )}
-                  {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
-                    <div className="flex items-center gap-1.5 pt-2 flex-nowrap overflow-x-auto no-scrollbar min-w-0 max-w-full">
-                      {info.myoAtlasLinks.map((link) => (
-                          <a
-                            key={link.url}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[#D0AECF]/50 bg-[#E8DCEB]/50 px-2.5 py-0.5 text-xs font-medium text-[#4A1D45] transition-colors hover:bg-[#E8DCEB] whitespace-nowrap"
-                          >
-                            <span className="truncate max-w-[130px]">{link.name}</span>
-                            <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
-                          </a>
-                        ))}
-                    </div>
-                  )}
-                </div>
+            <div className="space-y-2.5 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xl font-bold tracking-tight text-[#2D1B2E] flex-1 min-w-0">
+                  {ex.name}
+                </h2>
                 <button
                   type="button"
-                  aria-label="Remove exercise"
+                  title="Remove exercise"
+                  aria-label={`Remove ${ex.name}`}
                   onClick={() => update((l) => l.filter((e) => e.id !== ex.id))}
                   className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
                 >
                   <Trash2 className="h-4 w-4 stroke-[2.2]" />
                 </button>
               </div>
+
+              {info && (
+                <p className="text-xs leading-relaxed text-[#2D1B2E]/70">
+                  <span className="font-semibold text-[#4A1D45]">Avoid: </span>
+                  {info.avoid ?? info.tip}
+                </p>
+              )}
+              {last && (
+                <p className="text-xs font-medium text-[#5E3157]/70">
+                  Last: <span className="font-semibold text-[#4A1D45]">{last.best} {last.unit ?? "kg"}</span> on {last.date}
+                </p>
+              )}
+              {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
+                <div className="flex items-center gap-1.5 pt-0.5 flex-nowrap overflow-x-auto no-scrollbar w-full">
+                  {info.myoAtlasLinks.map((link) => (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[#D0AECF]/50 bg-[#E8DCEB]/50 px-2.5 py-0.5 text-xs font-medium text-[#4A1D45] transition-colors hover:bg-[#E8DCEB] whitespace-nowrap"
+                    >
+                      <span className="truncate max-w-[150px]">{link.name}</span>
+                      <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-60" />
+                    </a>
+                  ))}
+                </div>
+              )}
               <div className="space-y-1 pt-1">
                 <div className="flex gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
                   {isDuration ? (
@@ -306,22 +423,20 @@ function Workout() {
         );
       })}
 
-      {adding ? (
-        <div className="space-y-3 rounded-3xl bg-card p-4 shadow-soft">
-          <div className="grid grid-cols-2 gap-2">
-            {EXERCISE_LIBRARY.map((e) => (
-              <Button key={e.name} onClick={() => add(e.name)} className="rounded-xl bg-muted p-3 text-left text-sm">{e.name}</Button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Other exercise…" className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm" />
-            <Button onClick={() => add(custom)} className="rounded-xl bg-primary px-4 text-sm text-primary-foreground">Add</Button>
-          </div>
-          <Button onClick={() => setAdding(false)} className="w-full text-sm text-muted-foreground">Cancel</Button>
-        </div>
-      ) : (
-        <Button onClick={() => setAdding(true)} className="flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-border py-4 text-muted-foreground"><Plus className="h-4 w-4" /> Add exercise</Button>
-      )}
+      <Button
+        type="button"
+        onClick={() => setAdding(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-border py-4 font-semibold text-muted-foreground hover:border-primary/50 hover:text-foreground"
+      >
+        <Plus className="h-4 w-4" /> Add exercise
+      </Button>
+
+      <ExercisePickerModal
+        isOpen={adding}
+        onClose={() => setAdding(false)}
+        title="Add Exercise to Workout"
+        onSelect={(name) => add(name)}
+      />
 
       <Button
         disabled={done === 0}
@@ -342,7 +457,17 @@ function Workout() {
             : undefined
         }
         onClose={() => setShowFinishModal(false)}
-        onConfirm={finish}
+        onConfirm={handleFinishModalConfirm}
+      />
+
+      <PlanUpdateModal
+        isOpen={showPlanUpdateModal}
+        planName={originalPlan?.name ?? "Workout Plan"}
+        addedExercises={addedExercises}
+        removedExercises={removedExercises}
+        onUpdatePlan={handleUpdatePlan}
+        onSaveAsNewPlan={handleSaveAsNewPlan}
+        onDiscardChanges={handleDiscardChanges}
       />
     </div>
   );

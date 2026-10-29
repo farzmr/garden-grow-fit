@@ -10,6 +10,12 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 const isIos = process.env["BUILD_TARGET"] === "ios";
 
 export default defineConfig({
+  vite: {
+    server: {
+      host: "localhost",
+      port: 5173,
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

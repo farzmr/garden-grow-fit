@@ -19,7 +19,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { FlowerIcon, FLOWER_CATALOG } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
-import { LocationPicker } from "@/components/LocationPicker";
 import { FLOWERS, planToExercises, setState, useStore, type WorkoutPlan } from "@/lib/store";
 
 export const Route = createFileRoute("/start")({
@@ -61,7 +60,6 @@ function Start() {
   const [minutes, setMinutes] = useState<number>(45);
   const [customMinutes, setCustomMinutes] = useState<string>("75");
   const [isCustomActive, setIsCustomActive] = useState(false);
-  const [location, setLocation] = useState("");
   const [replace, setReplace] = useState(false);
 
   const beginWorkout = (plan: WorkoutPlan) => {
@@ -72,7 +70,7 @@ function Start() {
       activePlanId: plan.id,
       activePlanName: plan.name,
       activeActivity: "Workout",
-      activeLocation: location.trim() || undefined,
+      activeLocation: undefined,
       activeStartedAt: new Date().toISOString(),
       active: planToExercises(plan.items, x.sessions),
     }));
@@ -87,7 +85,7 @@ function Start() {
       flower,
       activeFlower: flower,
       activeActivity: activity,
-      activeLocation: location.trim() || undefined,
+      activeLocation: undefined,
       activeTargetMinutes: undefined,
       activeStartedAt: new Date().toISOString(),
       active: [],
@@ -104,7 +102,7 @@ function Start() {
       flower,
       activeFlower: flower,
       activeActivity: activity,
-      activeLocation: location.trim() || undefined,
+      activeLocation: undefined,
       activeTargetMinutes: chosenMinutes,
       activeStartedAt: new Date().toISOString(),
       active: [],
@@ -131,7 +129,7 @@ function Start() {
   const displayMinutes = isCustomActive ? parseInt(customMinutes) || 45 : minutes;
 
   return (
-    <div className="space-y-6 px-5 pt-10">
+    <div className={`px-5 ${step === "flower" ? "space-y-3 pt-5" : "space-y-6 pt-10"}`}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {step === "flower" ? "01 · Your flower" : "02 · Your activity"}
@@ -141,16 +139,16 @@ function Start() {
 
       {step === "flower" ? (
         <>
-          <h1 className="font-display text-4xl">What will you plant?</h1>
-          <div className="flex flex-col items-center justify-center rounded-3xl bg-garden/40 p-8 shadow-sm overflow-hidden min-h-[190px]">
+          <h1 className="font-display text-2xl font-bold">What will you plant?</h1>
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-garden/40 py-2.5 px-4 shadow-xs overflow-hidden min-h-[96px]">
             <div key={flower} className="animate-bloom-in flex items-center justify-center">
-              <FlowerIcon flower={flower} className="h-28 w-28 sm:h-32 sm:w-32 drop-shadow-md animate-sway" />
+              <FlowerIcon flower={flower} className="h-14 w-14 drop-shadow-sm animate-sway" />
             </div>
-            <p className="mt-3 text-base font-semibold text-primary capitalize">
+            <p className="mt-1 text-xs font-semibold text-primary capitalize">
               {FLOWER_CATALOG.find((m) => m.id === flower)?.name ?? flower}
             </p>
           </div>
-          <div className="grid grid-cols-3 min-[400px]:grid-cols-5 gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {FLOWERS.map((f) => {
               const meta = FLOWER_CATALOG.find((m) => m.id === f);
               const isSelected = flower === f;
@@ -161,14 +159,14 @@ function Start() {
                   aria-label={`Choose ${meta?.name ?? f}`}
                   aria-pressed={isSelected}
                   onClick={() => setFlower(f)}
-                  className={`flex h-20 sm:h-22 flex-col items-center justify-between rounded-2xl p-1.5 transition-all [&_svg]:!size-full ${
+                  className={`flex h-15 flex-col items-center justify-between rounded-xl p-1 transition-all [&_svg]:!size-full ${
                     isSelected
-                      ? "bg-accent ring-2 ring-primary scale-105 shadow-sm"
+                      ? "bg-accent ring-2 ring-primary scale-105 shadow-xs"
                       : "bg-card hover:bg-muted/50"
                   }`}
                 >
-                  <FlowerIcon flower={f} className="h-12 w-12 sm:h-13 sm:w-13 drop-shadow-xs" />
-                  <span className="truncate max-w-full px-0.5 text-[10px] sm:text-[11px] font-medium leading-none text-foreground/85">
+                  <FlowerIcon flower={f} className="h-7 w-7 drop-shadow-xs" />
+                  <span className="truncate max-w-full px-0.5 text-[10px] font-medium leading-none text-foreground/85">
                     {meta?.name ?? f}
                   </span>
                 </Button>
@@ -176,7 +174,7 @@ function Start() {
             })}
           </div>
           <Button
-            className="h-14 w-full rounded-2xl text-base"
+            className="h-12 w-full rounded-xl text-base font-semibold shadow-soft"
             onClick={() => setStep("activity")}
           >
             Next <ArrowRight />
@@ -276,10 +274,6 @@ function Start() {
               <div>
                 <h2 className="font-display text-2xl">Choose a plan</h2>
                 <p className="text-sm text-muted-foreground">Pick the routine you want to do today.</p>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <LocationPicker value={location} onChange={setLocation} />
               </div>
 
               <div className="space-y-3">
@@ -410,11 +404,6 @@ function Start() {
                   </p>
                 </div>
               )}
-
-              {/* Location Picker (Tags only) */}
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <LocationPicker value={location} onChange={setLocation} />
-              </div>
 
               {/* Action Button: Both say Start! */}
               <div className="pt-2">

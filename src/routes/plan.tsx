@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExercisePickerModal } from "@/components/ExercisePickerModal";
 import { DEFAULT_PLANS, EXERCISE_LIBRARY, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
 
 export const Route = createFileRoute("/plan")({
@@ -20,6 +21,7 @@ function Plans() {
   const s = useStore();
   const plans = s.plans.length > 0 ? s.plans : DEFAULT_PLANS;
   const [selected, setSelected] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const current = plans.find(plan => plan.id === selected);
   const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: (x.plans.length ? x.plans : DEFAULT_PLANS).map(p => p.id === plan.id ? plan : p)}));
   const createPlan = () => {
@@ -142,33 +144,36 @@ function Plans() {
         })}
       </div>
 
-      <select
-        aria-label="Add exercise"
-        value=""
-        onChange={(e) => {
-          if (e.target.value) {
-            const addedInfo = imageFor(e.target.value);
-            const isDur = addedInfo?.trackingType === "duration";
-            const defaultItem = {
-              name: e.target.value,
-              sets: 3,
-              reps: isDur ? 1 : 10,
-              weight: 10,
-              ...(isDur ? { time: addedInfo?.timeUnit === "min" ? 20 : 60 } : {}),
-            };
-            save({
-              ...current,
-              items: [...current.items, defaultItem],
-            });
-          }
-        }}
-        className="w-full rounded-xl border border-input bg-card px-3 py-3"
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setShowAddModal(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border py-4 font-semibold text-muted-foreground hover:border-primary/50 hover:text-foreground"
       >
-        <option value="">+ Add exercise</option>
-        {EXERCISE_LIBRARY.filter(ex => !current.items.some(item => item.name === ex.name)).map(ex => (
-          <option key={ex.name} value={ex.name}>{ex.name}</option>
-        ))}
-      </select>
+        <Plus className="h-4 w-4" /> Add exercise
+      </Button>
+
+      <ExercisePickerModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Exercise to Plan"
+        excludeNames={current.items.map((it) => it.name)}
+        onSelect={(exerciseName) => {
+          const addedInfo = imageFor(exerciseName);
+          const isDur = addedInfo?.trackingType === "duration";
+          const defaultItem = {
+            name: exerciseName,
+            sets: 3,
+            reps: isDur ? 1 : 10,
+            weight: 10,
+            ...(isDur ? { time: addedInfo?.timeUnit === "min" ? 20 : 60 } : {}),
+          };
+          save({
+            ...current,
+            items: [...current.items, defaultItem],
+          });
+        }}
+      />
 
       <Button
         variant="destructive"
