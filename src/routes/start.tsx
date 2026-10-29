@@ -129,26 +129,35 @@ function Start() {
   const displayMinutes = isCustomActive ? parseInt(customMinutes) || 45 : minutes;
 
   return (
-    <div className={`px-5 ${step === "flower" ? "space-y-3 pt-5" : "space-y-6 pt-10"}`}>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {step === "flower" ? "01 · Your flower" : "02 · Your activity"}
-        </p>
-        <Flower2 className="h-5 w-5 text-primary" />
-      </div>
-
+    <div
+      className={
+        step === "flower"
+          ? "flex flex-col min-h-[calc(100dvh-env(safe-area-inset-top,0px)-7rem)] px-5 pt-3 pb-1 justify-between gap-3.5"
+          : "space-y-6 px-5 pt-10"
+      }
+    >
       {step === "flower" ? (
         <>
-          <h1 className="font-display text-2xl font-bold">What will you plant?</h1>
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-garden/40 py-2.5 px-4 shadow-xs overflow-hidden min-h-[96px]">
-            <div key={flower} className="animate-bloom-in flex items-center justify-center">
-              <FlowerIcon flower={flower} className="h-14 w-14 drop-shadow-sm animate-sway" />
+          <div className="space-y-1.5 shrink-0">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                01 · Your flower
+              </p>
+              <Flower2 className="h-5 w-5 text-primary" />
             </div>
-            <p className="mt-1 text-xs font-semibold text-primary capitalize">
+            <h1 className="font-display text-3xl font-bold tracking-tight">What will you plant?</h1>
+          </div>
+
+          <div className="flex flex-1 min-h-[140px] max-h-[200px] flex-col items-center justify-center rounded-3xl bg-garden/40 p-4 shadow-sm overflow-hidden">
+            <div key={flower} className="animate-bloom-in flex items-center justify-center">
+              <FlowerIcon flower={flower} className="h-24 w-24 sm:h-28 sm:w-28 drop-shadow-md animate-sway" />
+            </div>
+            <p className="mt-2 text-base font-semibold text-primary capitalize">
               {FLOWER_CATALOG.find((m) => m.id === flower)?.name ?? flower}
             </p>
           </div>
-          <div className="grid grid-cols-5 gap-1.5">
+
+          <div className="grid grid-cols-5 gap-2 shrink-0">
             {FLOWERS.map((f) => {
               const meta = FLOWER_CATALOG.find((m) => m.id === f);
               const isSelected = flower === f;
@@ -159,29 +168,39 @@ function Start() {
                   aria-label={`Choose ${meta?.name ?? f}`}
                   aria-pressed={isSelected}
                   onClick={() => setFlower(f)}
-                  className={`flex h-15 flex-col items-center justify-between rounded-xl p-1 transition-all [&_svg]:!size-full ${
+                  className={`flex h-[74px] sm:h-[78px] flex-col items-center justify-between rounded-2xl p-1.5 transition-all [&_svg]:!size-full ${
                     isSelected
-                      ? "bg-accent ring-2 ring-primary scale-105 shadow-xs"
+                      ? "bg-accent ring-2 ring-primary scale-105 shadow-sm"
                       : "bg-card hover:bg-muted/50"
                   }`}
                 >
-                  <FlowerIcon flower={f} className="h-7 w-7 drop-shadow-xs" />
-                  <span className="truncate max-w-full px-0.5 text-[10px] font-medium leading-none text-foreground/85">
+                  <FlowerIcon flower={f} className="h-10 w-10 sm:h-11 sm:w-11 drop-shadow-xs" />
+                  <span className="truncate max-w-full px-0.5 text-[10px] sm:text-[11px] font-medium leading-none text-foreground/85">
                     {meta?.name ?? f}
                   </span>
                 </Button>
               );
             })}
           </div>
-          <Button
-            className="h-12 w-full rounded-xl text-base font-semibold shadow-soft"
-            onClick={() => setStep("activity")}
-          >
-            Next <ArrowRight />
-          </Button>
+
+          <div className="shrink-0 pt-1">
+            <Button
+              className="h-14 w-full rounded-2xl text-base font-semibold shadow-soft"
+              onClick={() => setStep("activity")}
+            >
+              Next <ArrowRight className="ml-1 h-5 w-5" />
+            </Button>
+          </div>
         </>
       ) : (
         <>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              02 · Your activity
+            </p>
+            <Flower2 className="h-5 w-5 text-primary" />
+          </div>
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"

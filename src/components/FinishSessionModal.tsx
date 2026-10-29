@@ -82,7 +82,17 @@ export function FinishSessionModal({
                         : "border-border bg-background hover:bg-muted"
                     }`}
                   >
-                    <span className="text-2xl">{emoji}</span>
+                    <span
+                      className="text-3xl leading-none select-none inline-block my-0.5"
+                      style={{
+                        fontFamily:
+                          '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif',
+                      }}
+                      role="img"
+                      aria-label={label}
+                    >
+                      {emoji}
+                    </span>
                     <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
                   </button>
                 );
