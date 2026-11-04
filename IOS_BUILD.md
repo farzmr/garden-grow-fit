@@ -7,7 +7,7 @@ Requires a Mac with Xcode 16+, CocoaPods-free Swift Package Manager (Capacitor 8
 1. **Export to GitHub** — in Lovable, open the GitHub menu and connect/export the project.
 2. **Clone or pull** on your Mac:
    ```sh
-   git clone <your-repo-url> && cd <repo>
+   git clone https://github.com/farzmr/garden-grow-fit.git && cd garden-grow-fit
    # later updates:
    git pull
    ```
