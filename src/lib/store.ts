@@ -1240,7 +1240,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "mph",
         step: 0.5,
         defaultVal: 5.0,
-        presets: [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.0],
+        presets: Array.from({ length: 29 }, (_, i) => Math.round((1.0 + i * 0.5) * 10) / 10), // 1.0 to 15.0 mph
       },
       {
         key: "incline",
@@ -1248,7 +1248,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "%",
         step: 1,
         defaultVal: 1,
-        presets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15],
+        presets: Array.from({ length: 21 }, (_, i) => i), // 0 to 20 %
       },
     ];
   }
@@ -1260,7 +1260,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "lvl",
         step: 1,
         defaultVal: 5,
-        presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16],
+        presets: Array.from({ length: 20 }, (_, i) => i + 1), // 1 to 20
       },
     ];
   }
@@ -1272,7 +1272,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "lvl",
         step: 1,
         defaultVal: 5,
-        presets: [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 18, 20],
+        presets: Array.from({ length: 25 }, (_, i) => i + 1), // 1 to 25
       },
       {
         key: "cadence",
@@ -1280,7 +1280,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "rpm",
         step: 5,
         defaultVal: 70,
-        presets: [50, 60, 65, 70, 75, 80, 85, 90, 100],
+        presets: Array.from({ length: 17 }, (_, i) => 40 + i * 5), // 40 to 120 rpm
       },
     ];
   }
@@ -1292,7 +1292,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "lvl",
         step: 1,
         defaultVal: 5,
-        presets: [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15],
+        presets: Array.from({ length: 25 }, (_, i) => i + 1), // 1 to 25
       },
       {
         key: "incline",
@@ -1300,7 +1300,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "%",
         step: 1,
         defaultVal: 1,
-        presets: [0, 1, 2, 3, 4, 5, 6, 8, 10, 12],
+        presets: Array.from({ length: 21 }, (_, i) => i), // 0 to 20 %
       },
     ];
   }
@@ -1312,7 +1312,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
         suffix: "lvl",
         step: 1,
         defaultVal: 5,
-        presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        presets: Array.from({ length: 10 }, (_, i) => i + 1), // 1 to 10
       },
     ];
   }
@@ -1326,7 +1326,7 @@ export function getCardioSettings(name: string): CardioSettingConfig[] {
       suffix: "lvl",
       step: 1,
       defaultVal: 1,
-      presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      presets: Array.from({ length: 20 }, (_, i) => i + 1), // 1 to 20
     },
   ];
 }

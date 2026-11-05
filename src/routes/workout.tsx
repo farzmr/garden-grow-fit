@@ -44,19 +44,10 @@ function update(fn: (ex: Exercise[]) => Exercise[]) {
   setState((x) => ({ ...x, active: fn(x.active ?? []) }));
 }
 
-const WEIGHT_PRESETS = [
-  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100,
-  105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185,
-  190, 195, 200, 210, 220, 225, 230, 240, 250, 275, 300, 315, 350, 405,
-];
-
-const REPS_PRESETS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-  21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-];
-
-const DURATION_MIN_PRESETS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 90];
-const DURATION_SEC_PRESETS = [15, 20, 30, 40, 45, 50, 60, 75, 90, 120, 180];
+const WEIGHT_PRESETS = Array.from({ length: 101 }, (_, i) => i * 5); // 0 to 500 lb, 5 by 5
+const REPS_PRESETS = Array.from({ length: 50 }, (_, i) => i + 1); // 1 to 50 reps, 1 by 1
+const DURATION_MIN_PRESETS = Array.from({ length: 90 }, (_, i) => i + 1); // 1 to 90 min
+const DURATION_SEC_PRESETS = Array.from({ length: 60 }, (_, i) => (i + 1) * 5); // 5 to 300 sec
 
 function formatExerciseSummary(ex: Exercise, info?: ExerciseInfo) {
   const isCardio = info?.category === "Cardio";
