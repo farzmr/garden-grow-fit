@@ -106,12 +106,20 @@ export function parseSets(value: unknown): SetEntry[] {
   if (!Array.isArray(value)) return [];
   return value
     .filter(isRecord)
-    .map((set) => ({
-      weight: num(set["weight"]),
-      reps: num(set["reps"]),
-      time: typeof set["time"] === "number" ? set["time"] : undefined,
-      done: set["done"] === true,
-    }));
+    .map((set) => {
+      const entry: SetEntry = {
+        weight: num(set["weight"]),
+        reps: num(set["reps"]),
+        done: set["done"] === true,
+      };
+      if (typeof set["time"] === "number") entry.time = set["time"];
+      if (typeof set["speed"] === "number") entry.speed = set["speed"];
+      if (typeof set["incline"] === "number") entry.incline = set["incline"];
+      if (typeof set["resistance"] === "number") entry.resistance = set["resistance"];
+      if (typeof set["level"] === "number") entry.level = set["level"];
+      if (typeof set["cadence"] === "number") entry.cadence = set["cadence"];
+      return entry;
+    });
 }
 
 export function parseExercises(value: unknown): Exercise[] {
@@ -119,7 +127,11 @@ export function parseExercises(value: unknown): Exercise[] {
   return value
     .filter(isRecord)
     .map((ex) => {
-      const exercise: Exercise = { id: str(ex["id"]) || uid(), name: str(ex["name"]), sets: parseSets(ex["sets"]) };
+      const exercise: Exercise = {
+        id: str(ex["id"]) || uid(),
+        name: str(ex["name"]),
+        sets: parseSets(ex["sets"]),
+      };
       if (ex["weightUnit"] === "lb" || ex["weightUnit"] === "kg") {
         exercise.weightUnit = ex["weightUnit"];
       }

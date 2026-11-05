@@ -31,8 +31,21 @@ import rowing from "@/assets/ex-rowing.jpg";
 export type ExerciseCategory = "Chest" | "Back" | "Shoulders" | "Legs" | "Arms" | "Core" | "Cardio";
 export type TrackingType = "weight" | "duration";
 export type TimeUnit = "sec" | "min";
-export type WeightUnit = "kg" | "lb";
+export type WeightUnit = "lb" | "kg";
 export type ExternalGuideLink = { name: string; url: string };
+
+export type CardioSettingKey = "speed" | "incline" | "resistance" | "level" | "cadence";
+
+export type CardioSettingConfig = {
+  key: CardioSettingKey;
+  label: string;
+  suffix: string;
+  step: number;
+  defaultVal: number;
+  presets: number[];
+  min?: number;
+  max?: number;
+};
 
 export type ExerciseInfo = {
   name: string;
@@ -870,6 +883,73 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
       { name: "Run On Treadmill", url: "https://myoatlas.com/exercises/run-on-treadmill-7so" }
     ],
   },
+  // User-added exercises
+  {
+    name: "Captain's Chair",
+    image: crunch,
+    category: "Core",
+    tip: "Place forearms on pads, grip handles firmly, and raise knees or straight legs up towards your chest with core control.",
+    avoid: "Don't swing your legs with momentum or let your lower back peel completely away from the back pad.",
+    myoAtlasLinks: [
+      { name: "Hanging Leg Hip Raise", url: "https://myoatlas.com/exercises/hanging-leg-hip-raise-7c4" },
+      { name: "Hanging Straight Leg Raise", url: "https://myoatlas.com/exercises/hanging-straight-leg-raise-6mn" }
+    ],
+  },
+  {
+    name: "Captains Chair",
+    image: crunch,
+    category: "Core",
+    tip: "Place forearms on pads, grip handles firmly, and raise knees or straight legs up towards your chest with core control.",
+    avoid: "Don't swing your legs with momentum or let your lower back peel completely away from the back pad.",
+    myoAtlasLinks: [
+      { name: "Hanging Leg Hip Raise", url: "https://myoatlas.com/exercises/hanging-leg-hip-raise-7c4" },
+      { name: "Hanging Straight Leg Raise", url: "https://myoatlas.com/exercises/hanging-straight-leg-raise-6mn" }
+    ],
+  },
+  {
+    name: "Seated Curl",
+    image: bicep,
+    category: "Arms",
+    tip: "Sit tall with chest proud, curl weights upward while keeping elbows stationary by your sides.",
+    avoid: "Don't rock your torso backward or swing elbows forward to gain momentum.",
+    myoAtlasLinks: [
+      { name: "Dumbbell Seated Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-biceps-curl-6hm" },
+      { name: "Dumbbell Incline Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-incline-biceps-curl-6i7" }
+    ],
+  },
+  {
+    name: "Seated curl",
+    image: bicep,
+    category: "Arms",
+    tip: "Sit tall with chest proud, curl weights upward while keeping elbows stationary by your sides.",
+    avoid: "Don't rock your torso backward or swing elbows forward to gain momentum.",
+    myoAtlasLinks: [
+      { name: "Dumbbell Seated Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-biceps-curl-6hm" },
+      { name: "Dumbbell Incline Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-incline-biceps-curl-6i7" }
+    ],
+  },
+  {
+    name: "Lat Pulldown Machine",
+    image: lat,
+    category: "Back",
+    tip: "Adjust thigh pads securely, grip wide handles, and pull smoothly down to upper chest while depressing shoulder blades.",
+    avoid: "Don't lean excessively backward or use swinging body momentum to pull the handles down.",
+    myoAtlasLinks: [
+      { name: "Cable Lateral Pulldown", url: "https://myoatlas.com/exercises/cable-lateral-pulldown-643" },
+      { name: "Cable Close Grip Front Lat Pulldown", url: "https://myoatlas.com/exercises/cable-close-grip-front-lat-pulldown-8zk" }
+    ],
+  },
+  {
+    name: "Cable Tricep Pushdown",
+    image: tricep,
+    category: "Arms",
+    tip: "Tuck elbows by your ribs, press bar or rope downward until arms are fully extended, flexing triceps.",
+    avoid: "Don't flare elbows outward or lean over the cable to push down with body weight.",
+    myoAtlasLinks: [
+      { name: "Cable Triceps Pushdown", url: "https://myoatlas.com/exercises/cable-triceps-pushdown-6g5" },
+      { name: "Cable One Arm Tricep Pushdown", url: "https://myoatlas.com/exercises/cable-one-arm-tricep-pushdown-7ga" }
+    ],
+  },
 ];
 
 
@@ -893,7 +973,17 @@ export const FLOWERS = [
 export const CLASSES = ["Workout", "Yoga", "Pilates", "Spin", "Cardio", "Dance", "Stretching", "Swimming"];
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export type SetEntry = { weight: number; reps: number; time?: number | undefined; done: boolean };
+export type SetEntry = {
+  weight: number;
+  reps: number;
+  time?: number | undefined;
+  done: boolean;
+  speed?: number | undefined;
+  incline?: number | undefined;
+  resistance?: number | undefined;
+  level?: number | undefined;
+  cadence?: number | undefined;
+};
 export type Exercise = { id: string; name: string; sets: SetEntry[]; weightUnit?: WeightUnit | undefined };
 export type Session = {
   id: string;
@@ -1131,7 +1221,115 @@ export const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
-export const imageFor = (name: string) => EXERCISE_LIBRARY.find((e) => e.name === name);
+
+export const normalizeExerciseName = (name: string): string =>
+  name.trim().toLowerCase().replace(/['’]/g, "");
+
+export const imageFor = (name: string): ExerciseInfo | undefined => {
+  const norm = normalizeExerciseName(name);
+  return EXERCISE_LIBRARY.find((e) => normalizeExerciseName(e.name) === norm);
+};
+
+export function getCardioSettings(name: string): CardioSettingConfig[] {
+  const norm = normalizeExerciseName(name);
+  if (norm.includes("treadmill")) {
+    return [
+      {
+        key: "speed",
+        label: "Speed",
+        suffix: "mph",
+        step: 0.5,
+        defaultVal: 5.0,
+        presets: [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 10.0],
+      },
+      {
+        key: "incline",
+        label: "Incline",
+        suffix: "%",
+        step: 1,
+        defaultVal: 1,
+        presets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15],
+      },
+    ];
+  }
+  if (norm.includes("stair") || norm.includes("step")) {
+    return [
+      {
+        key: "level",
+        label: "Level",
+        suffix: "lvl",
+        step: 1,
+        defaultVal: 5,
+        presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16],
+      },
+    ];
+  }
+  if (norm.includes("bike") || norm.includes("cycle") || norm.includes("spin")) {
+    return [
+      {
+        key: "resistance",
+        label: "Resistance",
+        suffix: "lvl",
+        step: 1,
+        defaultVal: 5,
+        presets: [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15, 18, 20],
+      },
+      {
+        key: "cadence",
+        label: "Cadence",
+        suffix: "rpm",
+        step: 5,
+        defaultVal: 70,
+        presets: [50, 60, 65, 70, 75, 80, 85, 90, 100],
+      },
+    ];
+  }
+  if (norm.includes("elliptical")) {
+    return [
+      {
+        key: "resistance",
+        label: "Resistance",
+        suffix: "lvl",
+        step: 1,
+        defaultVal: 5,
+        presets: [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 15],
+      },
+      {
+        key: "incline",
+        label: "Incline",
+        suffix: "%",
+        step: 1,
+        defaultVal: 1,
+        presets: [0, 1, 2, 3, 4, 5, 6, 8, 10, 12],
+      },
+    ];
+  }
+  if (norm.includes("row") || norm.includes("rowing")) {
+    return [
+      {
+        key: "resistance",
+        label: "Damper",
+        suffix: "lvl",
+        step: 1,
+        defaultVal: 5,
+        presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+    ];
+  }
+  if (norm.includes("jump rope") || norm.includes("rope")) {
+    return [];
+  }
+  return [
+    {
+      key: "level",
+      label: "Level",
+      suffix: "lvl",
+      step: 1,
+      defaultVal: 1,
+      presets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    },
+  ];
+}
 
 export function lastUsedFor(sessions: Session[], plan: WorkoutPlan) {
   return sessions.filter(session => !session.sample && (session.planId === plan.id || (!session.planId && session.planName === plan.name)))
@@ -1139,10 +1337,11 @@ export function lastUsedFor(sessions: Session[], plan: WorkoutPlan) {
 }
 
 export function lastLoggedSetsFor(sessions: Session[], name: string): SetEntry[] | null {
+  const norm = normalizeExerciseName(name);
   for (let i = sessions.length - 1; i >= 0; i--) {
     const sess = sessions[i];
     if (!sess) continue;
-    const ex = sess.exercises.find((e) => e.name.trim().toLowerCase() === name.trim().toLowerCase());
+    const ex = sess.exercises.find((e) => normalizeExerciseName(e.name) === norm);
     if (ex && ex.sets.length > 0) {
       return ex.sets;
     }
@@ -1152,15 +1351,31 @@ export function lastLoggedSetsFor(sessions: Session[], name: string): SetEntry[]
 
 export function planToExercises(items: PlanItem[], sessions?: Session[]): Exercise[] {
   return items.map((i) => {
+    const info = imageFor(i.name);
+    const isCardio = info?.category === "Cardio";
+    const targetSetCount = isCardio ? 1 : i.sets;
     const prevSets = sessions ? lastLoggedSetsFor(sessions, i.name) : null;
+    const cardioConfigs = isCardio ? getCardioSettings(i.name) : [];
+    const cardioDefaults: Record<string, number> = {};
+    for (const c of cardioConfigs) {
+      cardioDefaults[c.key] = c.defaultVal;
+    }
+
     return {
       id: uid(),
       name: i.name,
-      sets: Array.from({ length: i.sets }, (_, setIndex) => {
+      weightUnit: "lb",
+      sets: Array.from({ length: targetSetCount }, (_, setIndex) => {
         const prevSet = prevSets ? (prevSets[setIndex] ?? prevSets[prevSets.length - 1]) : null;
         return {
           weight: prevSet ? prevSet.weight : i.weight,
           reps: prevSet ? prevSet.reps : i.reps,
+          time: prevSet?.time ?? i.time,
+          speed: prevSet?.speed ?? cardioDefaults.speed,
+          incline: prevSet?.incline ?? cardioDefaults.incline,
+          resistance: prevSet?.resistance ?? cardioDefaults.resistance,
+          level: prevSet?.level ?? cardioDefaults.level,
+          cadence: prevSet?.cadence ?? cardioDefaults.cadence,
           done: false,
         };
       }),
@@ -1183,19 +1398,20 @@ export function streak(sessions: Session[]) {
 }
 
 export function lastFor(sessions: Session[], name: string): { date: string; best: number; unit?: string } | null {
+  const norm = normalizeExerciseName(name);
   const info = imageFor(name);
   const isDuration = info?.trackingType === "duration";
   const unit = info?.timeUnit ?? "sec";
   for (let i = sessions.length - 1; i >= 0; i--) {
     const sess = sessions[i];
     if (!sess) continue;
-    const ex = sess.exercises.find((e) => e.name === name);
+    const ex = sess.exercises.find((e) => normalizeExerciseName(e.name) === norm);
     if (ex?.sets.length) {
       if (isDuration) {
         const best = Math.max(...ex.sets.map((s) => s.time ?? s.reps ?? s.weight));
         return { date: sess.date, best, unit };
       }
-      return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)), unit: ex.weightUnit ?? "kg" };
+      return { date: sess.date, best: Math.max(...ex.sets.map((s) => s.weight)), unit: ex.weightUnit ?? "lb" };
     }
   }
   return null;

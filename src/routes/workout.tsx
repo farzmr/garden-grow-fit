@@ -1,16 +1,17 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Check, ExternalLink, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
 import { PlanUpdateModal } from "@/components/PlanUpdateModal";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
+import { PresetPickerModal } from "@/components/PresetPickerModal";
 import { FlowerIcon } from "@/components/FlowerIcon";
 import { InspirationalBanner } from "@/components/InspirationalBanner";
 import {
   DEFAULT_PLANS,
-  EXERCISE_LIBRARY,
   ensureDefaultPlans,
+  getCardioSettings,
   imageFor,
   lastFor,
   lastLoggedSetsFor,
@@ -18,7 +19,9 @@ import {
   today,
   uid,
   useStore,
+  type CardioSettingConfig,
   type Exercise,
+  type ExerciseInfo,
   type WeightUnit,
   type WorkoutPlan,
 } from "@/lib/store";
@@ -30,7 +33,8 @@ export const Route = createFileRoute("/workout")({
       { name: "description", content: "Complete, edit, add or remove exercises in today's workout." },
       { property: "og:title", content: "Today's workout — Bloom" },
       { property: "og:description", content: "Log weights and reps for every set." },
-      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Workout,
@@ -40,6 +44,47 @@ function update(fn: (ex: Exercise[]) => Exercise[]) {
   setState((x) => ({ ...x, active: fn(x.active ?? []) }));
 }
 
+const WEIGHT_PRESETS = [
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100,
+  105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180, 185,
+  190, 195, 200, 210, 220, 225, 230, 240, 250, 275, 300, 315, 350, 405,
+];
+
+const REPS_PRESETS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+];
+
+const DURATION_MIN_PRESETS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 90];
+const DURATION_SEC_PRESETS = [15, 20, 30, 40, 45, 50, 60, 75, 90, 120, 180];
+
+function formatExerciseSummary(ex: Exercise, info?: ExerciseInfo) {
+  const isCardio = info?.category === "Cardio";
+  const isDuration = info?.trackingType === "duration";
+  const unit = info?.timeUnit ?? "sec";
+  const weightUnit = ex.weightUnit ?? "lb";
+
+  if (isCardio) {
+    const first = ex.sets[0];
+    const parts: string[] = [`${first?.time ?? first?.reps ?? 20} ${unit}`];
+    if (first?.speed) parts.push(`${first.speed} mph`);
+    if (first?.incline) parts.push(`Incline ${first.incline}%`);
+    if (first?.resistance) parts.push(`Res ${first.resistance}`);
+    if (first?.level) parts.push(`Lvl ${first.level}`);
+    if (first?.cadence) parts.push(`${first.cadence} rpm`);
+    return `${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"} · ${parts.join(" · ")}`;
+  }
+
+  if (isDuration) {
+    const maxTime = Math.max(0, ...ex.sets.map((s) => s.time ?? s.reps ?? 0));
+    return `${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"} completed · ${maxTime} ${unit}`;
+  }
+
+  const maxW = Math.max(0, ...ex.sets.map((s) => s.weight));
+  const maxR = Math.max(0, ...ex.sets.map((s) => s.reps));
+  return `${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"} completed · ${maxW} ${weightUnit} × ${maxR} reps`;
+}
+
 function Workout() {
   const s = useStore();
   const nav = useNavigate();
@@ -47,6 +92,29 @@ function Workout() {
   const [planted, setPlanted] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [showPlanUpdateModal, setShowPlanUpdateModal] = useState(false);
+  const [openOverrides, setOpenOverrides] = useState<Record<string, boolean>>({});
+
+  // Preset picker modal state
+  const [pickerConfig, setPickerConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    value: number;
+    suffix: string;
+    step: number;
+    presets: number[];
+    min?: number;
+    max?: number;
+    onSelect: (v: number) => void;
+  }>({
+    isOpen: false,
+    title: "",
+    value: 0,
+    suffix: "",
+    step: 1,
+    presets: [],
+    onSelect: () => {},
+  });
+
   const [pendingFinishDetails, setPendingFinishDetails] = useState<{
     feelingEmoji?: string | undefined;
     notes?: string | undefined;
@@ -58,9 +126,7 @@ function Workout() {
 
   // Original plan comparison
   const allPlans = ensureDefaultPlans(s.plans);
-  const originalPlan = allPlans.find(
-    (p) => p.id === s.activePlanId
-  );
+  const originalPlan = allPlans.find((p) => p.id === s.activePlanId);
   const origExerciseNames = originalPlan ? originalPlan.items.map((i) => i.name) : [];
   const currentExerciseNames = list.map((e) => e.name);
 
@@ -75,23 +141,55 @@ function Workout() {
   const add = (name: string) => {
     if (!name.trim()) return;
     const exInfo = imageFor(name.trim());
+    const isCardio = exInfo?.category === "Cardio";
     const isDuration = exInfo?.trackingType === "duration";
     const defaultTime = exInfo?.timeUnit === "min" ? 20 : 60;
     const prev = lastLoggedSetsFor(s.sessions, name.trim());
+    const cardioConfigs = isCardio ? getCardioSettings(name.trim()) : [];
+    const cardioDefaults: Record<string, number> = {};
+    for (const c of cardioConfigs) {
+      cardioDefaults[c.key] = c.defaultVal;
+    }
+
     const initialSets = prev && prev.length > 0
-      ? prev.map((p) => ({ weight: p.weight, reps: p.reps, time: p.time, done: false }))
-      : isDuration
+      ? (isCardio ? [prev[0]!] : prev).map((p) => ({
+          weight: p.weight,
+          reps: p.reps,
+          time: p.time ?? (isDuration ? defaultTime : undefined),
+          speed: p.speed ?? cardioDefaults.speed,
+          incline: p.incline ?? cardioDefaults.incline,
+          resistance: p.resistance ?? cardioDefaults.resistance,
+          level: p.level ?? cardioDefaults.level,
+          cadence: p.cadence ?? cardioDefaults.cadence,
+          done: false,
+        }))
+      : isCardio
         ? [
-            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
-            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
-            { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+            {
+              weight: 0,
+              reps: defaultTime,
+              time: defaultTime,
+              speed: cardioDefaults.speed,
+              incline: cardioDefaults.incline,
+              resistance: cardioDefaults.resistance,
+              level: cardioDefaults.level,
+              cadence: cardioDefaults.cadence,
+              done: false,
+            },
           ]
-        : [
-            { weight: 10, reps: 10, done: false },
-            { weight: 10, reps: 10, done: false },
-            { weight: 10, reps: 10, done: false },
-          ];
-    update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets, weightUnit: "kg" }]);
+        : isDuration
+          ? [
+              { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+              { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+              { weight: 0, reps: defaultTime, time: defaultTime, done: false },
+            ]
+          : [
+              { weight: 25, reps: 10, done: false },
+              { weight: 25, reps: 10, done: false },
+              { weight: 25, reps: 10, done: false },
+            ];
+
+    update((l) => [...l, { id: uid(), name: name.trim(), sets: initialSets, weightUnit: "lb" }]);
     setAdding(false);
   };
 
@@ -99,8 +197,8 @@ function Workout() {
     update((l) =>
       l.map((e) => {
         if (e.id !== exId) return e;
-        const currentUnit: WeightUnit = e.weightUnit ?? "kg";
-        const nextUnit: WeightUnit = currentUnit === "kg" ? "lb" : "kg";
+        const currentUnit: WeightUnit = e.weightUnit ?? "lb";
+        const nextUnit: WeightUnit = currentUnit === "lb" ? "kg" : "lb";
         const convertedSets = e.sets.map((s) => {
           if (!s.weight) return s;
           const newWeight =
@@ -144,7 +242,7 @@ function Workout() {
           const isDur = exInfo?.trackingType === "duration";
           return {
             name: ex.name,
-            sets: ex.sets.length || 3,
+            sets: ex.sets.length || (exInfo?.category === "Cardio" ? 1 : 3),
             reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
             weight: ex.sets[0]?.weight || 10,
             ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
@@ -180,7 +278,7 @@ function Workout() {
           const isDur = exInfo?.trackingType === "duration";
           return {
             name: ex.name,
-            sets: ex.sets.length || 3,
+            sets: ex.sets.length || (exInfo?.category === "Cardio" ? 1 : 3),
             reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
             weight: ex.sets[0]?.weight || 10,
             ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
@@ -204,7 +302,9 @@ function Workout() {
   const completeFinish = (details?: { feelingEmoji?: string; notes?: string }) => {
     const completedAt = new Date().toISOString();
     const plantedFlower = s.activeFlower ?? s.flower;
-    const minutes = s.activeStartedAt ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000)) : undefined;
+    const minutes = s.activeStartedAt
+      ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
+      : undefined;
     setState((x) => ({
       ...x,
       active: null,
@@ -228,7 +328,13 @@ function Workout() {
           feelingEmoji: details?.feelingEmoji,
           notes: details?.notes,
           activity: "Workout",
-          exercises: list.map((e) => ({ ...e, sets: e.sets.filter((z) => z.done) })).filter((e) => e.sets.length),
+          exercises: list
+            .map((e) => ({
+              ...e,
+              weightUnit: e.weightUnit ?? "lb",
+              sets: e.sets.filter((z) => z.done),
+            }))
+            .filter((e) => e.sets.length),
           flower: plantedFlower,
           gardenId: x.mainGarden,
         },
@@ -239,16 +345,87 @@ function Workout() {
     setTimeout(() => nav({ to: "/" }), 1600);
   };
 
-  if (planted)
+  // Preset picker openers
+  const openWeightPicker = (current: number, unit: WeightUnit, onSave: (val: number) => void) => {
+    setPickerConfig({
+      isOpen: true,
+      title: `Select Weight (${unit})`,
+      value: current,
+      suffix: unit,
+      step: 5,
+      presets: WEIGHT_PRESETS,
+      min: 0,
+      onSelect: (val) => {
+        setPickerConfig((prev) => ({ ...prev, value: val }));
+        onSave(val);
+      },
+    });
+  };
+
+  const openRepsPicker = (current: number, onSave: (val: number) => void) => {
+    setPickerConfig({
+      isOpen: true,
+      title: "Select Reps",
+      value: current,
+      suffix: "reps",
+      step: 1,
+      presets: REPS_PRESETS,
+      min: 1,
+      onSelect: (val) => {
+        setPickerConfig((prev) => ({ ...prev, value: val }));
+        onSave(val);
+      },
+    });
+  };
+
+  const openDurationPicker = (current: number, unit: "min" | "sec", onSave: (val: number) => void) => {
+    setPickerConfig({
+      isOpen: true,
+      title: `Select Duration (${unit})`,
+      value: current,
+      suffix: unit,
+      step: unit === "min" ? 5 : 5,
+      presets: unit === "min" ? DURATION_MIN_PRESETS : DURATION_SEC_PRESETS,
+      min: 1,
+      onSelect: (val) => {
+        setPickerConfig((prev) => ({ ...prev, value: val }));
+        onSave(val);
+      },
+    });
+  };
+
+  const openCardioSettingPicker = (
+    cfg: CardioSettingConfig,
+    current: number,
+    onSave: (val: number) => void
+  ) => {
+    setPickerConfig({
+      isOpen: true,
+      title: `Select ${cfg.label} (${cfg.suffix})`,
+      value: current,
+      suffix: cfg.suffix,
+      step: cfg.step,
+      presets: cfg.presets,
+      min: cfg.min ?? 0,
+      max: cfg.max ?? 999,
+      onSelect: (val) => {
+        setPickerConfig((prev) => ({ ...prev, value: val }));
+        onSave(val);
+      },
+    });
+  };
+
+  if (planted) {
     return (
       <div className="flex min-h-[80vh] flex-col items-center justify-center gap-4 text-center">
         <span className="animate-bloom text-7xl">{finishedFlower}</span>
         <p className="font-display text-2xl">Great work! Flower planted.</p>
       </div>
     );
+  }
 
   return (
-    <div className="space-y-5 px-5 pt-10">
+    <div className="space-y-5 px-5 pt-10 pb-16">
       <header className="space-y-3">
         <div className="flex items-start justify-between">
           <div>
@@ -264,54 +441,147 @@ function Workout() {
         <InspirationalBanner />
         <div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${total ? (done / total) * 100 : 0}%` }}
+            />
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{done}/{total} sets done</p>
         </div>
       </header>
 
-      {list.length === 0 && <p className="rounded-3xl bg-card p-6 text-center text-muted-foreground shadow-soft">Nothing planned today — add an exercise below.</p>}
+      {list.length === 0 && (
+        <p className="rounded-3xl bg-card p-6 text-center text-muted-foreground shadow-soft">
+          Nothing planned today — add an exercise below.
+        </p>
+      )}
 
       {list.map((ex) => {
         const info = imageFor(ex.name);
         const last = lastFor(s.sessions, ex.name);
-        const allDone = ex.sets.every((x) => x.done);
+        const allDone = ex.sets.length > 0 && ex.sets.every((x) => x.done);
+        const isCollapsed = allDone && !openOverrides[ex.id];
+        const isCardio = info?.category === "Cardio";
         const isDuration = info?.trackingType === "duration";
         const unit = info?.timeUnit ?? "sec";
         const defaultDuration = unit === "min" ? 20 : 60;
-        const weightUnit: WeightUnit = ex.weightUnit ?? "kg";
+        const weightUnit: WeightUnit = ex.weightUnit ?? "lb";
+        const cardioConfigs = isCardio ? getCardioSettings(ex.name) : [];
+
+        // Shortened / closed drawer state when marked complete
+        if (isCollapsed) {
+          return (
+            <article
+              key={ex.id}
+              onClick={() => setOpenOverrides((prev) => ({ ...prev, [ex.id]: true }))}
+              className="flex items-center justify-between gap-3 rounded-3xl border border-[#D0AECF]/50 bg-[#FAF7F2] dark:bg-card p-4 shadow-soft cursor-pointer transition-all hover:bg-[#F4EDF5] dark:hover:bg-muted/40 active:scale-[0.99]"
+              role="button"
+              tabIndex={0}
+              aria-expanded={false}
+              aria-label={`${ex.name} completed. Tap to open drawer.`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setOpenOverrides((prev) => ({ ...prev, [ex.id]: true }));
+                }
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#4A1D45] text-white shadow-sm">
+                  <Check className="h-6 w-6 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-[#2D1B2E] dark:text-foreground truncate">
+                      {ex.name}
+                    </h2>
+                    <span className="shrink-0 rounded-full bg-[#E8DCEB] dark:bg-[#4A1D45]/30 px-2 py-0.5 text-[10px] font-bold text-[#4A1D45] dark:text-[#E8DCEB]">
+                      Done
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-[#5E3157]/80 dark:text-muted-foreground truncate">
+                    {formatExerciseSummary(ex, info)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-[#4A1D45] dark:text-[#E8DCEB] hidden sm:inline">
+                  Open drawer
+                </span>
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#E8DCEB] dark:bg-[#4A1D45]/40 text-[#4A1D45] dark:text-[#E8DCEB] transition-colors">
+                  <ChevronDown className="h-4 w-4 stroke-[2.2]" />
+                </div>
+              </div>
+            </article>
+          );
+        }
+
         return (
-          <article key={ex.id} className={`overflow-hidden rounded-3xl bg-card shadow-soft ${allDone ? "opacity-70" : ""}`}>
+          <article
+            key={ex.id}
+            className={`overflow-hidden rounded-3xl bg-card shadow-soft transition-all ${
+              allDone ? "ring-2 ring-[#4A1D45]/30" : ""
+            }`}
+          >
             {info?.image && (
               <div className="overflow-hidden bg-muted">
-                <img src={info.image} alt={ex.name} loading="lazy" width={816} height={816} className="mx-auto h-48 w-48 object-contain" />
+                <img
+                  src={info.image}
+                  alt={ex.name}
+                  loading="lazy"
+                  width={816}
+                  height={816}
+                  className="mx-auto h-48 w-48 object-contain"
+                />
               </div>
             )}
-            <div className="space-y-2.5 p-4">
+            <div className="space-y-3 p-4">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold tracking-tight text-[#2D1B2E] flex-1 min-w-0">
-                  {ex.name}
-                </h2>
-                <button
-                  type="button"
-                  title="Remove exercise"
-                  aria-label={`Remove ${ex.name}`}
-                  onClick={() => update((l) => l.filter((e) => e.id !== ex.id))}
-                  className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
-                >
-                  <Trash2 className="h-4 w-4 stroke-[2.2]" />
-                </button>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <h2 className="text-xl font-bold tracking-tight text-[#2D1B2E] dark:text-foreground truncate">
+                    {ex.name}
+                  </h2>
+                  {isCardio && (
+                    <span className="shrink-0 rounded-full bg-[#E8DCEB] dark:bg-muted px-2 py-0.5 text-[10px] font-bold text-[#4A1D45] dark:text-foreground">
+                      Cardio
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {allDone && (
+                    <button
+                      type="button"
+                      title="Close drawer"
+                      onClick={() => setOpenOverrides((prev) => ({ ...prev, [ex.id]: false }))}
+                      className="flex h-10 items-center gap-1 px-2.5 rounded-2xl border-none bg-[#E8DCEB] text-xs font-bold text-[#4A1D45] hover:bg-[#dfd0e3] transition-colors cursor-pointer"
+                    >
+                      <span className="hidden sm:inline">Close</span>
+                      <ChevronUp className="h-4 w-4 stroke-[2.2]" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    title="Remove exercise"
+                    aria-label={`Remove ${ex.name}`}
+                    onClick={() => update((l) => l.filter((e) => e.id !== ex.id))}
+                    className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
+                  >
+                    <Trash2 className="h-4 w-4 stroke-[2.2]" />
+                  </button>
+                </div>
               </div>
 
               {info && (
-                <p className="text-xs leading-relaxed text-[#2D1B2E]/70">
-                  <span className="font-semibold text-[#4A1D45]">Avoid: </span>
+                <p className="text-xs leading-relaxed text-[#2D1B2E]/70 dark:text-muted-foreground">
+                  <span className="font-semibold text-[#4A1D45] dark:text-foreground">Avoid: </span>
                   {info.avoid ?? info.tip}
                 </p>
               )}
               {last && (
-                <p className="text-xs font-medium text-[#5E3157]/70">
-                  Last: <span className="font-semibold text-[#4A1D45]">{last.best} {last.unit ?? "kg"}</span> on {last.date}
+                <p className="text-xs font-medium text-[#5E3157]/70 dark:text-muted-foreground">
+                  Last: <span className="font-semibold text-[#4A1D45] dark:text-foreground">{last.best} {last.unit ?? "lb"}</span> on {last.date}
                 </p>
               )}
               {info?.myoAtlasLinks && info.myoAtlasLinks.length > 0 && (
@@ -330,51 +600,201 @@ function Workout() {
                   ))}
                 </div>
               )}
+
+              {/* Set Headers */}
               <div className="space-y-1 pt-1">
-                <div className="flex gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] uppercase">
-                  {isDuration ? (
+                <div className="flex items-center gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] dark:text-muted-foreground uppercase">
+                  {isCardio ? (
+                    <div className="flex flex-1 items-center justify-between gap-2">
+                      <span className="flex-1 text-center">DURATION</span>
+                      {cardioConfigs.map((cfg) => (
+                        <span key={cfg.key} className="flex-1 text-center truncate">
+                          {cfg.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : isDuration ? (
                     <span className="flex-1 text-center">DURATION</span>
                   ) : (
-                    <div className="flex flex-1 items-center justify-center gap-1">
-                      <span>WEIGHT</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleWeightUnit(ex.id)}
-                        className="inline-flex items-center rounded-md border border-[#D0AECF]/60 bg-[#E8DCEB] px-1.5 py-0.5 text-[9px] font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3] cursor-pointer"
-                        title={`Click to switch between kg and lb (current: ${weightUnit})`}
-                      >
-                        <span>{weightUnit.toUpperCase()}</span>
-                        <span className="ml-0.5 opacity-60">⇄</span>
-                      </button>
-                    </div>
+                    <>
+                      <div className="flex flex-1 items-center justify-center gap-1">
+                        <span>WEIGHT</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleWeightUnit(ex.id)}
+                          className="inline-flex items-center rounded-md border border-[#D0AECF]/60 bg-[#E8DCEB] px-1.5 py-0.5 text-[9px] font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3] cursor-pointer"
+                          title={`Click to switch between lb and kg (current: ${weightUnit})`}
+                        >
+                          <span>{weightUnit.toUpperCase()}</span>
+                          <span className="ml-0.5 opacity-60">⇄</span>
+                        </button>
+                      </div>
+                      <span className="flex-1 text-center">REPS</span>
+                    </>
                   )}
-                  {!isDuration && <span className="flex-1 text-center">REPS</span>}
                 </div>
-                <div className="space-y-0">
+
+                {/* Set Rows */}
+                <div className="space-y-2">
                   {ex.sets.map((set, i) => (
-                    <div key={i} className="flex items-center gap-2 border-t-[1.5px] border-[#E8DCEB] py-2.5">
-                      <span className="w-6 text-center text-base font-bold text-[#4A1D45] shrink-0">{i + 1}</span>
-                      {isDuration ? (
-                        <NumField
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 border-t-[1.5px] border-[#E8DCEB] dark:border-border pt-2.5"
+                    >
+                      <span className="w-6 text-center text-base font-bold text-[#4A1D45] dark:text-foreground shrink-0">
+                        {i + 1}
+                      </span>
+
+                      {/* Interactive Fields (Zero keyboard, opens preset modal) */}
+                      {isCardio ? (
+                        <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                          <PresetField
+                            value={set.time ?? set.reps ?? defaultDuration}
+                            suffix={unit}
+                            label="Duration"
+                            onClick={() =>
+                              openDurationPicker(
+                                set.time ?? set.reps ?? defaultDuration,
+                                unit as "min" | "sec",
+                                (v) =>
+                                  update((l) =>
+                                    l.map((e) =>
+                                      e.id === ex.id
+                                        ? {
+                                            ...e,
+                                            sets: e.sets.map((z, j) =>
+                                              j === i ? { ...z, time: v, reps: v, weight: 0 } : z
+                                            ),
+                                          }
+                                        : e
+                                    )
+                                  )
+                              )
+                            }
+                          />
+                          {cardioConfigs.map((cfg) => {
+                            const val = (set[cfg.key] as number | undefined) ?? cfg.defaultVal;
+                            return (
+                              <PresetField
+                                key={cfg.key}
+                                value={val}
+                                suffix={cfg.suffix}
+                                label={cfg.label}
+                                onClick={() =>
+                                  openCardioSettingPicker(cfg, val, (v) =>
+                                    update((l) =>
+                                      l.map((e) =>
+                                        e.id === ex.id
+                                          ? {
+                                              ...e,
+                                              sets: e.sets.map((z, j) =>
+                                                j === i ? { ...z, [cfg.key]: v } : z
+                                              ),
+                                            }
+                                          : e
+                                      )
+                                    )
+                                  )
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      ) : isDuration ? (
+                        <PresetField
                           value={set.time ?? set.reps ?? defaultDuration}
                           suffix={unit}
-                          onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, time: v, reps: v, weight: 0 } : z) } : e))}
+                          label="Duration"
+                          onClick={() =>
+                            openDurationPicker(
+                              set.time ?? set.reps ?? defaultDuration,
+                              unit as "min" | "sec",
+                              (v) =>
+                                update((l) =>
+                                  l.map((e) =>
+                                    e.id === ex.id
+                                      ? {
+                                          ...e,
+                                          sets: e.sets.map((z, j) =>
+                                            j === i ? { ...z, time: v, reps: v, weight: 0 } : z
+                                          ),
+                                        }
+                                      : e
+                                  )
+                                )
+                            )
+                          }
                         />
                       ) : (
-                        <>
-                          <NumField
+                        <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                          <PresetField
                             value={set.weight}
                             suffix={weightUnit}
+                            label="Weight"
                             onToggleUnit={() => toggleWeightUnit(ex.id)}
-                            onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, weight: v } : z) } : e))}
+                            onClick={() =>
+                              openWeightPicker(set.weight, weightUnit, (v) =>
+                                update((l) =>
+                                  l.map((e) =>
+                                    e.id === ex.id
+                                      ? {
+                                          ...e,
+                                          sets: e.sets.map((z, j) =>
+                                            j === i ? { ...z, weight: v } : z
+                                          ),
+                                        }
+                                      : e
+                                  )
+                                )
+                              )
+                            }
                           />
-                          <NumField value={set.reps} suffix="reps" onChange={(v) => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, reps: v } : z) } : e))} />
-                        </>
+                          <PresetField
+                            value={set.reps}
+                            suffix="reps"
+                            label="Reps"
+                            onClick={() =>
+                              openRepsPicker(set.reps, (v) =>
+                                update((l) =>
+                                  l.map((e) =>
+                                    e.id === ex.id
+                                      ? {
+                                          ...e,
+                                          sets: e.sets.map((z, j) =>
+                                            j === i ? { ...z, reps: v } : z
+                                          ),
+                                        }
+                                      : e
+                                  )
+                                )
+                              )
+                            }
+                          />
+                        </div>
                       )}
+
+                      {/* Action buttons */}
                       <button
                         type="button"
                         aria-label={set.done ? "Mark set incomplete" : "Complete set"}
-                        onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z, j) => j === i ? { ...z, done: !z.done } : z) } : e))}
+                        onClick={() => {
+                          const nextDone = !set.done;
+                          if (!nextDone) {
+                            setOpenOverrides((prev) => ({ ...prev, [ex.id]: true }));
+                          }
+                          update((l) =>
+                            l.map((e) =>
+                              e.id === ex.id
+                                ? {
+                                    ...e,
+                                    sets: e.sets.map((z, j) =>
+                                      j === i ? { ...z, done: nextDone } : z
+                                    ),
+                                  }
+                                : e
+                            )
+                          );
+                        }}
                         className={`flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all ${
                           set.done
                             ? "border-2 border-[#4A1D45] bg-[#4A1D45] text-white shadow-sm"
@@ -386,7 +806,15 @@ function Workout() {
                       <button
                         type="button"
                         aria-label="Remove set"
-                        onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.filter((_, j) => j !== i) } : e))}
+                        onClick={() =>
+                          update((l) =>
+                            l.map((e) =>
+                              e.id === ex.id
+                                ? { ...e, sets: e.sets.filter((_, j) => j !== i) }
+                                : e
+                            )
+                          )
+                        }
                         className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-[#E8DCEB] text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
                       >
                         <X className="h-5 w-5 stroke-[2.2]" />
@@ -394,26 +822,67 @@ function Workout() {
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-3 pl-8 pt-1.5">
+
+                {/* Footer Buttons */}
+                <div className="flex gap-3 pl-8 pt-2">
                   <button
                     type="button"
-                    onClick={() => update((l) => l.map((e) => {
-                      if (e.id !== ex.id) return e;
-                      const lastSet = e.sets.at(-1);
-                      const currentWeightUnit = e.weightUnit ?? "kg";
-                      const defaultWeight = currentWeightUnit === "lb" ? 25 : 10;
-                      const newSet = isDuration
-                        ? { weight: 0, reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration, time: lastSet?.time ?? lastSet?.reps ?? defaultDuration, done: false }
-                        : { ...(lastSet ?? { weight: defaultWeight, reps: 10 }), done: false };
-                      return { ...e, sets: [...e.sets, newSet] };
-                    }))}
+                    onClick={() =>
+                      update((l) =>
+                        l.map((e) => {
+                          if (e.id !== ex.id) return e;
+                          const lastSet = e.sets.at(-1);
+                          const currentWeightUnit = e.weightUnit ?? "lb";
+                          const defaultWeight = currentWeightUnit === "lb" ? 25 : 10;
+                          const newSet = isCardio
+                            ? {
+                                weight: 0,
+                                reps: lastSet?.time ?? defaultDuration,
+                                time: lastSet?.time ?? defaultDuration,
+                                speed: lastSet?.speed,
+                                incline: lastSet?.incline,
+                                resistance: lastSet?.resistance,
+                                level: lastSet?.level,
+                                cadence: lastSet?.cadence,
+                                done: false,
+                              }
+                            : isDuration
+                              ? {
+                                  weight: 0,
+                                  reps: lastSet?.time ?? lastSet?.reps ?? defaultDuration,
+                                  time: lastSet?.time ?? lastSet?.reps ?? defaultDuration,
+                                  done: false,
+                                }
+                              : {
+                                  ...(lastSet ?? { weight: defaultWeight, reps: 10 }),
+                                  done: false,
+                                };
+                          return { ...e, sets: [...e.sets, newSet] };
+                        })
+                      )
+                    }
                     className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#E8DCEB] text-sm font-bold text-[#4A1D45] transition-colors hover:bg-[#dfd0e3]"
                   >
                     + Set
                   </button>
                   <button
                     type="button"
-                    onClick={() => update((l) => l.map((e) => e.id === ex.id ? { ...e, sets: e.sets.map((z) => ({ ...z, done: !allDone })) } : e))}
+                    onClick={() => {
+                      const nextDone = !allDone;
+                      if (nextDone) {
+                        // Collapse on complete all
+                        setOpenOverrides((prev) => ({ ...prev, [ex.id]: false }));
+                      } else {
+                        setOpenOverrides((prev) => ({ ...prev, [ex.id]: true }));
+                      }
+                      update((l) =>
+                        l.map((e) =>
+                          e.id === ex.id
+                            ? { ...e, sets: e.sets.map((z) => ({ ...z, done: nextDone })) }
+                            : e
+                        )
+                      );
+                    }}
                     className="flex h-11 flex-1 cursor-pointer items-center justify-center rounded-[18px] border-none bg-[#4A1D45] text-sm font-bold text-[#E8DCEB] transition-colors hover:bg-[#3d1739]"
                   >
                     {allDone ? "Undo all" : "Complete all"}
@@ -471,34 +940,60 @@ function Workout() {
         onSaveAsNewPlan={handleSaveAsNewPlan}
         onDiscardChanges={handleDiscardChanges}
       />
+
+      <PresetPickerModal
+        isOpen={pickerConfig.isOpen}
+        title={pickerConfig.title}
+        value={pickerConfig.value}
+        suffix={pickerConfig.suffix}
+        step={pickerConfig.step}
+        presets={pickerConfig.presets}
+        min={pickerConfig.min}
+        max={pickerConfig.max}
+        onSelect={pickerConfig.onSelect}
+        onClose={() => setPickerConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
 
-function NumField({
+function PresetField({
   value,
   suffix,
-  onChange,
+  label,
+  onClick,
   onToggleUnit,
 }: {
   value: number;
   suffix: string;
-  onChange: (v: number) => void;
+  label?: string;
+  onClick: () => void;
   onToggleUnit?: (() => void) | undefined;
 }) {
   return (
-    <label className="flex h-10 flex-1 box-border cursor-text items-center justify-center gap-1 rounded-2xl bg-[#F1EEE9] px-2 text-[#4A1D45] transition-all focus-within:ring-2 focus-within:ring-[#D0AECF]">
-      <input
-        type="number"
-        inputMode="decimal"
-        value={value === 0 && suffix !== "kg" && suffix !== "lb" ? "" : value}
-        placeholder="0"
-        onChange={(e) => onChange(e.target.value === "" ? 0 : +e.target.value)}
-        min={0}
-        aria-label={suffix === "kg" || suffix === "lb" ? `Weight in ${suffix}` : suffix}
-        className="w-10 bg-transparent text-right font-sans text-base font-semibold text-[#4A1D45] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[#4A1D45]/30"
-      />
-      {onToggleUnit ? (
+    <div className="flex h-11 flex-1 min-w-[68px] items-center justify-between gap-1 rounded-2xl bg-[#F1EEE9] px-2 text-[#4A1D45] transition-all hover:bg-[#eae5df] active:scale-[0.98]">
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-1 items-center justify-center gap-1 min-w-0 py-1 text-center cursor-pointer outline-none"
+        aria-label={label ? `${label}: ${value} ${suffix}` : `${value} ${suffix}`}
+      >
+        {label && label !== "Weight" && label !== "Reps" && label !== "Duration" && (
+          <span className="text-[10px] font-semibold text-[#5E3157]/70 uppercase tracking-tight mr-0.5 truncate max-w-[46px]">
+            {label}:
+          </span>
+        )}
+        <span className="font-sans text-base font-bold text-[#4A1D45] tabular-nums truncate">
+          {value}
+        </span>
+        {!onToggleUnit && (
+          <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">
+            {suffix}
+          </span>
+        )}
+      </button>
+
+      {onToggleUnit && (
         <button
           type="button"
           onClick={(e) => {
@@ -506,14 +1001,12 @@ function NumField({
             e.stopPropagation();
             onToggleUnit();
           }}
-          title="Click to switch between kg and lb"
-          className="shrink-0 text-xs font-semibold text-[#4A1D45]/75 hover:text-[#4A1D45] underline decoration-dotted underline-offset-2 cursor-pointer transition-colors"
+          title="Click to switch between lb and kg"
+          className="shrink-0 rounded-md bg-[#E8DCEB] px-1 py-0.5 text-[10px] font-bold text-[#4A1D45] hover:bg-[#dfd0e3] cursor-pointer transition-colors"
         >
           {suffix}
         </button>
-      ) : (
-        <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">{suffix}</span>
       )}
-    </label>
+    </div>
   );
 }

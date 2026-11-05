@@ -133,6 +133,7 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
           const info = imageFor(ex.name);
           const isDuration = info?.trackingType === "duration";
           const unit = info?.timeUnit ?? "sec";
+          const weightUnit = ex.weightUnit ?? "lb";
           const maxWeight = Math.max(0, ...ex.sets.map(set => set.weight));
           const maxReps = Math.max(0, ...ex.sets.map(set => set.reps));
           const maxTime = Math.max(0, ...ex.sets.map(set => set.time ?? set.reps ?? set.weight));
@@ -142,15 +143,23 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
                 <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                   <Dumbbell className="h-4 w-4 shrink-0 text-primary" />{ex.name}
                 </h3>
-                <span className="shrink-0 text-xs text-muted-foreground">{ex.sets.length} sets</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{ex.sets.length} {ex.sets.length === 1 ? "set" : "sets"}</span>
               </div>
               <p className="mt-1 text-xs font-medium">
-                {isDuration ? `Best: ${maxTime} ${unit}` : `Max ${maxWeight} kg · Max ${maxReps} reps`}
+                {isDuration ? `Best: ${maxTime} ${unit}` : `Max ${maxWeight} ${weightUnit} · Max ${maxReps} reps`}
               </p>
               <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">
                 {isDuration
-                  ? ex.sets.map((set, index) => `Set ${index + 1}: ${set.time ?? set.reps ?? set.weight} ${unit}`).join(" · ")
-                  : ex.sets.map((set, index) => `Set ${index + 1}: ${set.weight} kg × ${set.reps}`).join(" · ")}
+                  ? ex.sets.map((set, index) => {
+                      const parts = [`${set.time ?? set.reps ?? set.weight} ${unit}`];
+                      if (set.speed !== undefined && set.speed > 0) parts.push(`${set.speed} mph`);
+                      if (set.incline !== undefined && set.incline > 0) parts.push(`Incline ${set.incline}%`);
+                      if (set.resistance !== undefined && set.resistance > 0) parts.push(`Res ${set.resistance}`);
+                      if (set.level !== undefined && set.level > 0) parts.push(`Lvl ${set.level}`);
+                      if (set.cadence !== undefined && set.cadence > 0) parts.push(`${set.cadence} rpm`);
+                      return `Set ${index + 1}: ${parts.join(" · ")}`;
+                    }).join(" · ")
+                  : ex.sets.map((set, index) => `Set ${index + 1}: ${set.weight} ${weightUnit} × ${set.reps}`).join(" · ")}
               </p>
             </section>
           );

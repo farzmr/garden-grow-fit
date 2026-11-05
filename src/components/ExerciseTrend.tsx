@@ -5,18 +5,20 @@ export function ExerciseTrend({ name }: { name: string }) {
   const s = useStore();
   const info = imageFor(name);
   const isDuration = info?.trackingType === "duration";
-  const unit = info?.timeUnit ?? "sec";
 
   const records = s.sessions.flatMap(session => {
-    const sets = session.exercises.filter(e => e.name === name).flatMap(e => e.sets);
+    const matchingExercises = session.exercises.filter(e => e.name.trim().toLowerCase() === name.trim().toLowerCase());
+    const sets = matchingExercises.flatMap(e => e.sets);
     if (!sets.length) return [];
+    const exerciseWeightUnit = matchingExercises[0]?.weightUnit ?? "lb";
     const metric = isDuration
       ? Math.max(...sets.map(z => z.time ?? z.reps ?? z.weight))
       : Math.max(...sets.map(z => z.weight));
-    return [{ id: session.id, date: session.date, time: session.completedAt, value: metric, sets }];
+    return [{ id: session.id, date: session.date, time: session.completedAt, value: metric, sets, weightUnit: exerciseWeightUnit }];
   }).sort((a, b) => (a.time ?? a.date).localeCompare(b.time ?? b.date));
 
   const last = records.at(-1);
+  const unit = isDuration ? (info?.timeUnit ?? "sec") : (last?.weightUnit ?? "lb");
   const data = records.map(r => ({
     date: new Date(r.date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
     value: r.value,
@@ -55,7 +57,7 @@ export function ExerciseTrend({ name }: { name: string }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <p className="text-xs text-muted-foreground">{isDuration ? `Longest set · ${unit}` : "Heaviest set · kg"}</p>
+        <p className="text-xs text-muted-foreground">{isDuration ? `Longest set · ${unit}` : `Heaviest set · ${unit}`}</p>
       </section>
 
       <section>
@@ -67,7 +69,7 @@ export function ExerciseTrend({ name }: { name: string }) {
               <p className="mt-1 text-sm text-muted-foreground">
                 {isDuration
                   ? r.sets.map(z => `${z.time ?? z.reps ?? z.weight} ${unit}`).join(' · ')
-                  : r.sets.map(z => `${z.weight} kg × ${z.reps}`).join(' · ')}
+                  : r.sets.map(z => `${z.weight} ${r.weightUnit} × ${z.reps}`).join(' · ')}
               </p>
             </article>
           ))}

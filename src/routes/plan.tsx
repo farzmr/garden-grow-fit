@@ -123,7 +123,7 @@ function Plans() {
                 <div className="grid grid-cols-3 gap-2">
                   {(["sets", "reps", "weight"] as const).map((field) => (
                     <label key={field} className="text-xs text-muted-foreground">
-                      <span>{field === "weight" ? "kg / level" : field}</span>
+                      <span>{field === "weight" ? "lb / level" : field}</span>
                       <input
                         type="number"
                         min={0}
@@ -162,9 +162,10 @@ function Plans() {
         onSelect={(exerciseName) => {
           const addedInfo = imageFor(exerciseName);
           const isDur = addedInfo?.trackingType === "duration";
+          const isCardio = addedInfo?.category === "Cardio";
           const defaultItem = {
             name: exerciseName,
-            sets: 3,
+            sets: isCardio ? 1 : 3,
             reps: isDur ? 1 : 10,
             weight: 10,
             ...(isDur ? { time: addedInfo?.timeUnit === "min" ? 20 : 60 } : {}),

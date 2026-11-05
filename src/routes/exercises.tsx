@@ -131,7 +131,7 @@ function Exercises() {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {last ? `${last.best} ${last.unit ?? "kg"} · ${last.date}` : "Not trained yet"}
+                  {last ? `${last.best} ${last.unit ?? "lb"} · ${last.date}` : "Not trained yet"}
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
