@@ -3,7 +3,20 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
-import { DEFAULT_PLANS, EXERCISE_LIBRARY, ensureDefaultPlans, imageFor, lastUsedFor, setState, uid, useStore, type WorkoutPlan, type Difficulty } from "@/lib/store";
+import {
+  DEFAULT_PLANS,
+  EXERCISE_LIBRARY,
+  MANDATORY_COOL_DOWNS,
+  ensureDefaultPlans,
+  imageFor,
+  isMandatoryCoolDown,
+  lastUsedFor,
+  setState,
+  uid,
+  useStore,
+  type WorkoutPlan,
+  type Difficulty,
+} from "@/lib/store";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [
@@ -26,7 +39,7 @@ function Plans() {
   const isDefaultPlan = current ? DEFAULT_PLANS.some(p => p.id === current.id) : false;
   const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: ensureDefaultPlans(x.plans).map(p => p.id === plan.id ? plan : p)}));
   const createPlan = () => {
-    const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[], difficulty:"Beginner" };
+    const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[...MANDATORY_COOL_DOWNS], difficulty:"Beginner" };
     setState(x => ({...x, plans: [...ensureDefaultPlans(x.plans), plan]}));
     setSelected(plan.id);
   };
@@ -65,25 +78,38 @@ function Plans() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <h2 className="break-words font-semibold leading-tight">{item.name}</h2>
-                      {info?.category && (
+                      {isMandatoryCoolDown(item.name) ? (
+                        <span className="rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 text-[10px] font-medium">
+                          Mandatory Cool-down
+                        </span>
+                      ) : info?.category ? (
                         <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                           {info.category}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     {info?.tip && (
                       <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{info.tip}</p>
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${item.name}`}
-                  onClick={() => save({ ...current, items: current.items.filter((_, i) => i !== index) })}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                {isMandatoryCoolDown(item.name) ? (
+                  <span
+                    className="text-[10px] font-medium text-muted-foreground/80 px-2 py-1 rounded bg-muted/60"
+                    title="Mandatory cool-down for all plans"
+                  >
+                    Required
+                  </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${item.name}`}
+                    onClick={() => save({ ...current, items: current.items.filter((_, i) => i !== index) })}
+                  >
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
               </div>
 
               {isDuration ? (

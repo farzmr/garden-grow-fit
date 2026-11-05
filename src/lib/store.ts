@@ -30,6 +30,10 @@ import rowing from "@/assets/ex-rowing.jpg";
 import captainsChair from "@/assets/ex-captains-chair.jpg";
 import gobletSquat from "@/assets/ex-goblet-squat.jpg";
 import jumpRope from "@/assets/ex-jump-rope.jpg";
+import childsPose from "@/assets/ex-childs-pose.jpg";
+import figure4Stretch from "@/assets/ex-figure-4-stretch.jpg";
+import catCow from "@/assets/ex-cat-cow.jpg";
+import pigeonPose from "@/assets/ex-pigeon-pose.jpg";
 
 export type ExerciseCategory = "Chest" | "Back" | "Shoulders" | "Legs" | "Arms" | "Core" | "Cardio";
 export type TrackingType = "weight" | "duration";
@@ -887,6 +891,59 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
       { name: "Cable One Arm Tricep Pushdown", url: "https://myoatlas.com/exercises/cable-one-arm-tricep-pushdown-7ga" }
     ],
   },
+  // Cool-down & Mobility
+  {
+    name: "Child's Pose",
+    image: childsPose,
+    category: "Core",
+    trackingType: "duration",
+    timeUnit: "sec",
+    tip: "Kneel with knees wide, sink hips back onto heels, extend arms forward on the mat, and rest forehead down. Breathe deeply into your lower back.",
+    avoid: "Don't force hips back if knees feel uncomfortable, and keep shoulders relaxed away from ears.",
+    myoAtlasLinks: [
+      { name: "Child's Pose Lower Back Stretch", url: "https://myoatlas.com/exercises/seated-lower-back-stretch-6sm" },
+      { name: "Kneeling Lat Stretch", url: "https://myoatlas.com/exercises/lat-stretch-69j" }
+    ],
+  },
+  {
+    name: "Figure-4 Stretch",
+    image: figure4Stretch,
+    category: "Legs",
+    trackingType: "duration",
+    timeUnit: "sec",
+    tip: "Lie flat on your back, cross one ankle over opposite knee to form a figure-4, reach through to grasp hamstring, and gently hug leg toward chest.",
+    avoid: "Don't lift neck or shoulders off the floor or pull aggressively; keep spine neutral.",
+    myoAtlasLinks: [
+      { name: "Piriformis Release Stretch", url: "https://myoatlas.com/exercises/roll-ball-piriformis-release-8uf" },
+      { name: "Standing Glute Stretch", url: "https://myoatlas.com/exercises/standing-glute-stretch-63z" }
+    ],
+  },
+  {
+    name: "Cat-Cow",
+    image: catCow,
+    category: "Core",
+    trackingType: "duration",
+    timeUnit: "sec",
+    tip: "On hands and knees: inhale and gently drop belly while lifting chest and tailbone (Cow). Exhale and round spine up toward ceiling while tucking chin (Cat).",
+    avoid: "Don't rush between poses or dump weight into wrists; move smoothly with each breath.",
+    myoAtlasLinks: [
+      { name: "Cat Spine Stretch", url: "https://myoatlas.com/exercises/cat-stretch-6g3" },
+      { name: "Bird Dog Spine Mobilization", url: "https://myoatlas.com/exercises/bird-dog-6m3" }
+    ],
+  },
+  {
+    name: "Pigeon Pose",
+    image: pigeonPose,
+    category: "Legs",
+    trackingType: "duration",
+    timeUnit: "sec",
+    tip: "Bring one knee forward behind wrist with shin angled across mat, extend rear leg straight back, and square hips as you fold forward.",
+    avoid: "Don't twist your knee or roll onto one hip; keep pelvis square and level.",
+    myoAtlasLinks: [
+      { name: "Pigeon Hip Stretch", url: "https://myoatlas.com/exercises/pigeon-hip-stretch-7mg" },
+      { name: "Standing Glute Stretch", url: "https://myoatlas.com/exercises/standing-glute-stretch-63z" }
+    ],
+  },
 ];
 
 
@@ -969,6 +1026,34 @@ const p = (name: string, sets = 3, reps = 10, weight = 10, time?: number): PlanI
   ...(time !== undefined ? { time } : {}),
 });
 
+export const MANDATORY_COOL_DOWNS: PlanItem[] = [
+  p("Child's Pose", 1, 1, 0, 60),
+  p("Figure-4 Stretch", 1, 1, 0, 45),
+  p("Cat-Cow", 1, 10, 0, 60),
+  p("Pigeon Pose", 1, 1, 0, 45),
+];
+
+export const MANDATORY_COOL_DOWN_NAMES = new Set(
+  MANDATORY_COOL_DOWNS.map((c) => c.name.trim().toLowerCase())
+);
+
+export function isMandatoryCoolDown(name: string): boolean {
+  return MANDATORY_COOL_DOWN_NAMES.has(name.trim().toLowerCase());
+}
+
+export function ensureMandatoryCoolDowns(items: PlanItem[]): PlanItem[] {
+  const current = [...items];
+  for (const coolDown of MANDATORY_COOL_DOWNS) {
+    const exists = current.some(
+      (item) => item.name.trim().toLowerCase() === coolDown.name.trim().toLowerCase()
+    );
+    if (!exists) {
+      current.push({ ...coolDown });
+    }
+  }
+  return current;
+}
+
 export const DEFAULT_PLANS: WorkoutPlan[] = [
   {
     id: "plan-full-body",
@@ -981,6 +1066,7 @@ export const DEFAULT_PLANS: WorkoutPlan[] = [
       p("Shoulder Press", 3, 10, 8),
       p("Glute Bridge", 3, 12, 15),
       p("Plank", 3, 1, 0, 45),
+      ...MANDATORY_COOL_DOWNS,
     ],
   },
   {
@@ -994,6 +1080,7 @@ export const DEFAULT_PLANS: WorkoutPlan[] = [
       p("Glute Bridge", 3, 12, 20),
       p("Leg Curl", 3, 10, 15),
       p("Standing Calf Raise", 3, 15, 10),
+      ...MANDATORY_COOL_DOWNS,
     ],
   },
   {
@@ -1008,6 +1095,7 @@ export const DEFAULT_PLANS: WorkoutPlan[] = [
       p("Dumbbell Bicep Curl", 3, 10, 8),
       p("Cable Tricep Pushdown", 3, 12, 15),
       p("Dumbbell Lateral Raise", 3, 12, 6),
+      ...MANDATORY_COOL_DOWNS,
     ],
   },
 ];
@@ -1021,7 +1109,11 @@ export function ensureDefaultPlans(plans?: WorkoutPlan[] | null): WorkoutPlan[] 
     const found = existing.find(
       (p) => p.id === def.id || p.name.trim().toLowerCase() === def.name.trim().toLowerCase()
     );
-    result.push(found ? { ...found, id: def.id } : def);
+    const plan = found ? { ...found, id: def.id } : def;
+    result.push({
+      ...plan,
+      items: ensureMandatoryCoolDowns(plan.items),
+    });
   }
 
   // 2. Append any custom plans created by the user
@@ -1030,7 +1122,10 @@ export function ensureDefaultPlans(plans?: WorkoutPlan[] | null): WorkoutPlan[] 
       (def) => def.id === p.id || def.name.trim().toLowerCase() === p.name.trim().toLowerCase()
     );
     if (!isDefault) {
-      result.push(p);
+      result.push({
+        ...p,
+        items: ensureMandatoryCoolDowns(p.items),
+      });
     }
   }
 

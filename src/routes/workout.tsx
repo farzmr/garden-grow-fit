@@ -594,12 +594,12 @@ function Workout() {
 
               {/* Set Headers */}
               <div className="space-y-1 pt-1">
-                <div className="flex items-center gap-2 pl-8 pr-24 text-[11px] font-bold tracking-[0.08em] text-[#5E3157] dark:text-muted-foreground uppercase">
+                <div className="flex items-center gap-2 pl-8 pr-[88px] text-[11px] font-bold tracking-[0.08em] text-[#5E3157] dark:text-muted-foreground uppercase">
                   {isCardio ? (
-                    <div className="flex flex-1 items-center justify-between gap-2">
-                      <span className="flex-1 text-center">DURATION</span>
+                    <div className="grid flex-1 grid-flow-col auto-cols-fr gap-1.5 text-center">
+                      <span className="truncate">DURATION</span>
                       {cardioConfigs.map((cfg) => (
-                        <span key={cfg.key} className="flex-1 text-center truncate">
+                        <span key={cfg.key} className="truncate">
                           {cfg.label}
                         </span>
                       ))}
@@ -607,8 +607,8 @@ function Workout() {
                   ) : isDuration ? (
                     <span className="flex-1 text-center">DURATION</span>
                   ) : (
-                    <>
-                      <div className="flex flex-1 items-center justify-center gap-1">
+                    <div className="grid flex-1 grid-flow-col auto-cols-fr gap-1.5 text-center">
+                      <div className="flex items-center justify-center gap-1">
                         <span>WEIGHT</span>
                         <button
                           type="button"
@@ -620,8 +620,8 @@ function Workout() {
                           <span className="ml-0.5 opacity-60">⇄</span>
                         </button>
                       </div>
-                      <span className="flex-1 text-center">REPS</span>
-                    </>
+                      <span className="text-center">REPS</span>
+                    </div>
                   )}
                 </div>
 
@@ -638,7 +638,7 @@ function Workout() {
 
                       {/* Interactive Fields (Zero keyboard, opens preset modal) */}
                       {isCardio ? (
-                        <div className="flex flex-1 items-center gap-1.5 min-w-0">
+                        <div className="grid flex-1 grid-flow-col auto-cols-fr gap-1.5 min-w-0">
                           <PresetField
                             value={set.time ?? set.reps ?? defaultDuration}
                             suffix={unit}
@@ -961,25 +961,21 @@ function PresetField({
   onClick: () => void;
   onToggleUnit?: (() => void) | undefined;
 }) {
+  const formattedSuffix = suffix === "%" ? "%" : ` ${suffix}`;
   return (
-    <div className="flex h-11 flex-1 min-w-[68px] items-center justify-between gap-1 rounded-2xl bg-[#F1EEE9] px-2 text-[#4A1D45] transition-all hover:bg-[#eae5df] active:scale-[0.98]">
+    <div className="flex h-11 flex-1 min-w-0 items-center justify-between gap-1 rounded-2xl bg-[#F1EEE9] px-1.5 sm:px-2 text-[#4A1D45] transition-all hover:bg-[#eae5df] active:scale-[0.98]">
       <button
         type="button"
         onClick={onClick}
-        className="flex flex-1 items-center justify-center gap-1 min-w-0 py-1 text-center cursor-pointer outline-none"
-        aria-label={label ? `${label}: ${value} ${suffix}` : `${value} ${suffix}`}
+        className="flex flex-1 items-center justify-center gap-0.5 min-w-0 py-1 text-center cursor-pointer outline-none"
+        aria-label={label ? `${label}: ${value}${formattedSuffix}` : `${value}${formattedSuffix}`}
       >
-        {label && label !== "Weight" && label !== "Reps" && label !== "Duration" && (
-          <span className="text-[10px] font-semibold text-[#5E3157]/70 uppercase tracking-tight mr-0.5 truncate max-w-[46px]">
-            {label}:
-          </span>
-        )}
-        <span className="font-sans text-base font-bold text-[#4A1D45] tabular-nums truncate">
+        <span className="font-sans text-sm sm:text-base font-bold text-[#4A1D45] tabular-nums truncate">
           {value}
         </span>
         {!onToggleUnit && (
-          <span className="shrink-0 text-xs font-normal text-[#4A1D45]/70">
-            {suffix}
+          <span className="shrink-0 text-[11px] sm:text-xs font-normal text-[#4A1D45]/75">
+            {formattedSuffix}
           </span>
         )}
       </button>
@@ -993,7 +989,7 @@ function PresetField({
             onToggleUnit();
           }}
           title="Click to switch between lb and kg"
-          className="shrink-0 rounded-md bg-[#E8DCEB] px-1 py-0.5 text-[10px] font-bold text-[#4A1D45] hover:bg-[#dfd0e3] cursor-pointer transition-colors"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/80 text-[10px] font-bold text-[#4A1D45] shadow-xs transition-colors hover:bg-white cursor-pointer"
         >
           {suffix}
         </button>
