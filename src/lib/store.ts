@@ -27,6 +27,9 @@ import crunch from "@/assets/ex-crunch.jpg";
 import bike from "@/assets/ex-bike.jpg";
 import treadmill from "@/assets/ex-treadmill.jpg";
 import rowing from "@/assets/ex-rowing.jpg";
+import captainsChair from "@/assets/ex-captains-chair.jpg";
+import gobletSquat from "@/assets/ex-goblet-squat.jpg";
+import jumpRope from "@/assets/ex-jump-rope.jpg";
 
 export type ExerciseCategory = "Chest" | "Back" | "Shoulders" | "Legs" | "Arms" | "Core" | "Cardio";
 export type TrackingType = "weight" | "duration";
@@ -84,7 +87,7 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
   },
   {
     name: "Goblet Squat",
-    image: squat,
+    image: gobletSquat,
     category: "Legs",
     tip: "Hold weight tight against your chest, keep knees out and back flat.",
     avoid: "Don't let the weight pull your chest down or round your spine.",
@@ -190,16 +193,6 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     avoid: "Don't lift your hips off the pad or use lower-back hyperextension.",
     myoAtlasLinks: [
       { name: "Lever Seated Leg Curl", url: "https://myoatlas.com/exercises/lever-seated-leg-curl-11" },
-      { name: "Lever Lying Leg Curl", url: "https://myoatlas.com/exercises/lever-lying-leg-curl-0c" }
-    ],
-  },
-  {
-    name: "Lying Leg Curl",
-    image: legCurl,
-    category: "Legs",
-    tip: "Pin hips to bench, flex hamstrings to draw heels in.",
-    avoid: "Don't arch your lower back off the bench to pull the pads.",
-    myoAtlasLinks: [
       { name: "Lever Lying Leg Curl", url: "https://myoatlas.com/exercises/lever-lying-leg-curl-0c" }
     ],
   },
@@ -525,17 +518,6 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     ],
   },
   {
-    name: "Overhead Press",
-    image: press,
-    category: "Shoulders",
-    tip: "Barbell on front delts, press vertically and lock out overhead.",
-    avoid: "Don't lean back to turn it into an incline press; brace abs and glutes.",
-    myoAtlasLinks: [
-      { name: "Barbell Seated Overhead Press", url: "https://myoatlas.com/exercises/barbell-seated-overhead-press-61z" },
-      { name: "Dumbbell Standing Overhead Press", url: "https://myoatlas.com/exercises/dumbbell-standing-overhead-press-6l0" }
-    ],
-  },
-  {
     name: "Dumbbell Shoulder Press",
     image: press,
     category: "Shoulders",
@@ -677,17 +659,6 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     myoAtlasLinks: [
       { name: "Cable Lying Biceps Curl", url: "https://myoatlas.com/exercises/cable-lying-biceps-curl-7xd" },
       { name: "Cable Preacher Curl", url: "https://myoatlas.com/exercises/cable-preacher-curl-64v" }
-    ],
-  },
-  {
-    name: "Tricep Pushdown",
-    image: tricep,
-    category: "Arms",
-    tip: "Pin elbows by your sides, extend arms downward fully.",
-    avoid: "Don't flare your elbows outward or use your bodyweight to press down.",
-    myoAtlasLinks: [
-      { name: "Cable Triceps Pushdown", url: "https://myoatlas.com/exercises/cable-triceps-pushdown-6g5" },
-      { name: "Cable One Arm Tricep Pushdown", url: "https://myoatlas.com/exercises/cable-one-arm-tricep-pushdown-7ga" }
     ],
   },
   {
@@ -872,7 +843,7 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
   },
   {
     name: "Jump Rope",
-    image: treadmill,
+    image: jumpRope,
     category: "Cardio",
     tip: "Stay on balls of feet, spin rope with wrist flicks.",
     avoid: "Don't jump high or kick your heels back; keep jumps small on balls of feet.",
@@ -883,27 +854,15 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
       { name: "Run On Treadmill", url: "https://myoatlas.com/exercises/run-on-treadmill-7so" }
     ],
   },
-  // User-added exercises
   {
     name: "Captain's Chair",
-    image: crunch,
+    image: captainsChair,
     category: "Core",
-    tip: "Place forearms on pads, grip handles firmly, and raise knees or straight legs up towards your chest with core control.",
-    avoid: "Don't swing your legs with momentum or let your lower back peel completely away from the back pad.",
+    tip: "Rest forearms on the padded armrests, grip handles firmly, and press your back against the back pad. Raise your knees up toward your chest (or lift straight legs) by flexing your abs and slightly tilting your pelvis upward. Lower slowly with control.",
+    avoid: "Don't swing your legs with momentum, arch your lower back away from the pad, or shrug your shoulders toward your ears.",
     myoAtlasLinks: [
-      { name: "Hanging Leg Hip Raise", url: "https://myoatlas.com/exercises/hanging-leg-hip-raise-7c4" },
-      { name: "Hanging Straight Leg Raise", url: "https://myoatlas.com/exercises/hanging-straight-leg-raise-6mn" }
-    ],
-  },
-  {
-    name: "Captains Chair",
-    image: crunch,
-    category: "Core",
-    tip: "Place forearms on pads, grip handles firmly, and raise knees or straight legs up towards your chest with core control.",
-    avoid: "Don't swing your legs with momentum or let your lower back peel completely away from the back pad.",
-    myoAtlasLinks: [
-      { name: "Hanging Leg Hip Raise", url: "https://myoatlas.com/exercises/hanging-leg-hip-raise-7c4" },
-      { name: "Hanging Straight Leg Raise", url: "https://myoatlas.com/exercises/hanging-straight-leg-raise-6mn" }
+      { name: "Captains Chair Straight Leg Raise", url: "https://myoatlas.com/exercises/captains-chair-straight-leg-raise-9lc" },
+      { name: "Weighted Captains Chair Leg Raise", url: "https://myoatlas.com/exercises/weighted-captains-chair-leg-raise-7rh" }
     ],
   },
   {
@@ -915,28 +874,6 @@ export const EXERCISE_LIBRARY: ExerciseInfo[] = [
     myoAtlasLinks: [
       { name: "Dumbbell Seated Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-biceps-curl-6hm" },
       { name: "Dumbbell Incline Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-incline-biceps-curl-6i7" }
-    ],
-  },
-  {
-    name: "Seated curl",
-    image: bicep,
-    category: "Arms",
-    tip: "Sit tall with chest proud, curl weights upward while keeping elbows stationary by your sides.",
-    avoid: "Don't rock your torso backward or swing elbows forward to gain momentum.",
-    myoAtlasLinks: [
-      { name: "Dumbbell Seated Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-biceps-curl-6hm" },
-      { name: "Dumbbell Incline Biceps Curl", url: "https://myoatlas.com/exercises/dumbbell-incline-biceps-curl-6i7" }
-    ],
-  },
-  {
-    name: "Lat Pulldown Machine",
-    image: lat,
-    category: "Back",
-    tip: "Adjust thigh pads securely, grip wide handles, and pull smoothly down to upper chest while depressing shoulder blades.",
-    avoid: "Don't lean excessively backward or use swinging body momentum to pull the handles down.",
-    myoAtlasLinks: [
-      { name: "Cable Lateral Pulldown", url: "https://myoatlas.com/exercises/cable-lateral-pulldown-643" },
-      { name: "Cable Close Grip Front Lat Pulldown", url: "https://myoatlas.com/exercises/cable-close-grip-front-lat-pulldown-8zk" }
     ],
   },
   {
@@ -1222,8 +1159,15 @@ export const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-export const normalizeExerciseName = (name: string): string =>
-  name.trim().toLowerCase().replace(/['’]/g, "");
+export const normalizeExerciseName = (name: string): string => {
+  let norm = name.trim().toLowerCase().replace(/['’]/g, "");
+  if (norm === "captains chair" || norm === "captain chair") return "captain's chair";
+  if (norm === "lat pulldown machine") return "lat pulldown";
+  if (norm === "tricep pushdown") return "cable tricep pushdown";
+  if (norm === "lying leg curl") return "leg curl";
+  if (norm === "overhead press") return "shoulder press";
+  return norm;
+};
 
 export const imageFor = (name: string): ExerciseInfo | undefined => {
   const norm = normalizeExerciseName(name);

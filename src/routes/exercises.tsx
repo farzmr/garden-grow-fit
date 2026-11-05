@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search, ChevronRight, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EXERCISE_LIBRARY, lastFor, useStore, type ExerciseCategory } from "@/lib/store";
+import { EXERCISE_LIBRARY, imageFor, lastFor, normalizeExerciseName, useStore, type ExerciseCategory } from "@/lib/store";
 
 export const Route = createFileRoute("/exercises")({
   head: () => ({
@@ -39,18 +39,27 @@ function Exercises() {
   }, []);
 
   const names = useMemo(() => {
-    return [
-      ...new Set([
-        ...EXERCISE_LIBRARY.map((e) => e.name),
-        ...s.sessions.flatMap((x) => x.exercises.map((e) => e.name)),
-        ...Object.values(s.plan).flatMap((x) => x.map((e) => e.name)),
-      ]),
-    ].sort();
+    const rawNames = [
+      ...EXERCISE_LIBRARY.map((e) => e.name),
+      ...s.sessions.flatMap((x) => x.exercises.map((e) => e.name)),
+      ...Object.values(s.plan).flatMap((x) => x.map((e) => e.name)),
+    ];
+    const canonicalMap = new Map<string, string>();
+    for (const name of rawNames) {
+      if (!name || name === "__meta__") continue;
+      const matched = imageFor(name);
+      const canonical = matched ? matched.name : name.trim();
+      const key = normalizeExerciseName(canonical);
+      if (!canonicalMap.has(key)) {
+        canonicalMap.set(key, canonical);
+      }
+    }
+    return Array.from(canonicalMap.values()).sort();
   }, [s.sessions, s.plan]);
 
   const filtered = useMemo(() => {
     return names.filter((name) => {
-      const info = libraryMap.get(name);
+      const info = libraryMap.get(name) ?? imageFor(name);
       if (category !== "All" && info?.category !== category) {
         return false;
       }
@@ -98,7 +107,7 @@ function Exercises() {
 
       <div className="divide-y divide-border">
         {filtered.map((name) => {
-          const info = libraryMap.get(name);
+          const info = libraryMap.get(name) ?? imageFor(name);
           const last = lastFor(s.sessions, name);
           return (
             <Link
