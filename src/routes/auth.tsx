@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ArrowRight, CloudUpload, KeyRound, Loader2, LogOut } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ type Note = { kind: "error" | "ok"; text: string };
 
 function Auth() {
   const nav = useNavigate();
+  const posthog = usePostHog();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +81,9 @@ function Auth() {
       setNote({ kind: "error", text: result.error });
       return;
     }
+    posthog.capture(mode === "in" ? "user_signed_in" : "account_created", {
+      authentication_method: "password",
+    });
     if (result.needsConfirmation) {
       setMode("in");
       setNote({ kind: "ok", text: "Almost there — open the email we just sent to confirm your address, then sign in." });

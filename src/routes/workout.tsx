@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { Check, ChevronDown, ChevronUp, ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
 import { PlanUpdateModal } from "@/components/PlanUpdateModal";
@@ -79,6 +80,7 @@ function formatExerciseSummary(ex: Exercise, info?: ExerciseInfo) {
 function Workout() {
   const s = useStore();
   const nav = useNavigate();
+  const posthog = usePostHog();
   const [adding, setAdding] = useState(false);
   const [planted, setPlanted] = useState(false);
   const [showFinishModal, setShowFinishModal] = useState(false);
@@ -219,6 +221,10 @@ function Workout() {
 
   const handleUpdatePlan = () => {
     if (originalPlan) {
+      posthog.capture("workout_plan_updated", {
+        added_exercise_count: addedExercises.length,
+        removed_exercise_count: removedExercises.length,
+      });
       const updatedPlan: WorkoutPlan = {
         ...originalPlan,
         items: list.map((ex) => {
@@ -253,6 +259,9 @@ function Workout() {
 
   const handleSaveAsNewPlan = (newPlanName: string) => {
     if (originalPlan) {
+      posthog.capture("workout_plan_saved", {
+        exercise_count: list.length,
+      });
       const newPlan: WorkoutPlan = {
         id: uid(),
         name: newPlanName.trim() || `${originalPlan.name} (Updated)`,
@@ -296,6 +305,11 @@ function Workout() {
     const minutes = s.activeStartedAt
       ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
       : undefined;
+    posthog.capture("workout_completed", {
+      completed_exercise_count: list.filter((exercise) => exercise.sets.some((set) => set.done)).length,
+      completed_set_count: done,
+      duration_minutes: minutes,
+    });
     setState((x) => ({
       ...x,
       active: null,

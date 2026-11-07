@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ArrowLeft, Check, Loader2, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { currentAccount, signOut, updateUserProfile, type AuthAccount } from "@/lib/auth";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const nav = useNavigate();
+  const posthog = usePostHog();
   const syncStatus = useSyncStatus();
   const [account, setAccount] = useState<AuthAccount | null>(null);
   const [firstName, setFirstName] = useState("");
@@ -49,6 +51,7 @@ function ProfilePage() {
     if (res.error) {
       setError(res.error);
     } else {
+      posthog.capture("profile_updated");
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       const updated = await currentAccount();
@@ -57,6 +60,7 @@ function ProfilePage() {
   };
 
   const handleSignOut = async () => {
+    posthog.capture("user_signed_out");
     await signOut();
     void nav({ to: "/auth", replace: true });
   };

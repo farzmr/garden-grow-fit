@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Dumbbell, Clock3, Signal, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExercisePickerModal } from "@/components/ExercisePickerModal";
@@ -32,6 +33,7 @@ export const Route = createFileRoute("/plan")({
 
 function Plans() {
   const s = useStore();
+  const posthog = usePostHog();
   const plans = ensureDefaultPlans(s.plans);
   const [selected, setSelected] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -40,6 +42,9 @@ function Plans() {
   const save = (plan: WorkoutPlan) => setState(x => ({...x, plans: ensureDefaultPlans(x.plans).map(p => p.id === plan.id ? plan : p)}));
   const createPlan = () => {
     const plan: WorkoutPlan = { id:uid(), name:"My new plan", items:[...MANDATORY_COOL_DOWNS], difficulty:"Beginner" };
+    posthog.capture("workout_plan_created", {
+      initial_exercise_count: plan.items.length,
+    });
     setState(x => ({...x, plans: [...ensureDefaultPlans(x.plans), plan]}));
     setSelected(plan.id);
   };
@@ -219,6 +224,9 @@ function Plans() {
           variant="destructive"
           className="w-full gap-2"
           onClick={() => {
+            posthog.capture("workout_plan_deleted", {
+              exercise_count: current.items.length,
+            });
             setState(x => ({ ...x, plans: x.plans.filter(p => p.id !== current.id) }));
             setSelected(null);
           }}

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ChevronLeft, ChevronRight, Clock3, Dumbbell, MapPin, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FlowerIcon } from "@/components/FlowerIcon";
@@ -72,6 +73,7 @@ function HistoryPage(){
 }
 
 function SessionDetails({session,close}:{session:Session;close:()=>void}){
+  const posthog = usePostHog();
   return <article role="region" aria-label={`${session.activity} details`} className="border-t-2 border-primary pb-3 pt-4">
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
@@ -92,6 +94,10 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
             aria-label="Delete session"
             className="text-muted-foreground hover:text-destructive"
             onClick={() => {
+              posthog.capture("session_deleted", {
+                exercise_count: session.exercises.length,
+                duration_minutes: session.minutes,
+              });
               deleteSession(session.id);
               close();
             }}

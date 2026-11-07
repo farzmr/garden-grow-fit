@@ -8,11 +8,13 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { PostHogProvider, usePostHog } from "posthog-js/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { TabBar } from "@/components/TabBar";
+import { currentAccount, onAccountChange, type AuthAccount } from "@/lib/auth";
 import { startSync } from "@/lib/sync";
 
 function NotFoundComponent() {
@@ -40,9 +42,16 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  const posthog = usePostHog();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    posthog.captureException(error, {
+      boundary: "tanstack_root_error_component",
+    });
+    posthog.logger.error("root route error boundary rendered", {
+      boundary: "tanstack_root_error_component",
+    });
+  }, [error, posthog]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -105,8 +114,65 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+function PostHogIdentity() {
+  const posthog = usePostHog();
+  const identifiedAccountId = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let receivedAuthStateChange = false;
+
+    const syncIdentity = (account: AuthAccount | null) => {
+      if (!active) return;
+
+      if (!account) {
+        if (identifiedAccountId.current) {
+          posthog.reset();
+          identifiedAccountId.current = null;
+        }
+        return;
+      }
+
+      if (identifiedAccountId.current === account.id) return;
+
+      if (identifiedAccountId.current) {
+        posthog.reset();
+      }
+
+      posthog.identify(account.id, {
+        email: account.email,
+        first_name: account.firstName,
+        last_name: account.lastName,
+        name: account.fullName,
+      });
+      identifiedAccountId.current = account.id;
+      posthog.logger.info("authenticated account session identified");
+    };
+
+    const unsubscribe = onAccountChange((account) => {
+      receivedAuthStateChange = true;
+      syncIdentity(account);
+    });
+
+    void currentAccount().then((account) => {
+      if (!receivedAuthStateChange) syncIdentity(account);
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [posthog]);
+
+  return null;
+}
+
 function RootShell({ children }: { children: ReactNode }) {
-  return (
+  const projectToken = import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"] as
+    | string
+    | undefined;
+  const posthogHost = import.meta.env["VITE_PUBLIC_POSTHOG_HOST"] as string | undefined;
+  const document = (
     <html lang="en">
       <head>
         <HeadContent />
@@ -117,6 +183,38 @@ function RootShell({ children }: { children: ReactNode }) {
       </body>
     </html>
   );
+
+  if (!projectToken || !posthogHost) {
+    if (typeof window !== "undefined" && import.meta.env.DEV) {
+      const variableName = projectToken
+        ? "VITE_PUBLIC_POSTHOG_HOST"
+        : "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN";
+      throw new Error(
+        `${variableName} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${variableName} is configured`,
+      );
+    }
+
+    return document;
+  }
+
+  return (
+    <PostHogProvider
+      apiKey={projectToken}
+      options={{
+        api_host: posthogHost,
+        defaults: "2025-05-24",
+        capture_exceptions: true,
+        debug: import.meta.env.DEV,
+        logs: {
+          serviceName: "garden-grow-fit-web",
+          environment: import.meta.env.MODE,
+        },
+      }}
+    >
+      <PostHogIdentity />
+      {document}
+    </PostHogProvider>
+  );
 }
 
 function RootComponent() {
@@ -125,7 +223,7 @@ function RootComponent() {
   // Keeps this phone and your account's copy of the garden in step.
   useEffect(() => startSync(), []);
 
-  return (
+  const app = (
     <QueryClientProvider client={queryClient}>
       <div className="mx-auto min-h-screen max-w-md pb-28 pt-[env(safe-area-inset-top)] font-sans">
         <Outlet />
@@ -133,4 +231,6 @@ function RootComponent() {
       <TabBar />
     </QueryClientProvider>
   );
+
+  return app;
 }

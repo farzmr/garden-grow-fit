@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ArrowRight, Play, X, Clock3, User, Check, MapPin } from "lucide-react";
 import { FlowerIcon } from "@/components/FlowerIcon";
 import { Garden } from "@/components/Garden";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const nav = useNavigate();
+  const posthog = usePostHog();
   const [account, setAccount] = useState<AuthAccount | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -126,6 +128,10 @@ function Home() {
       ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
       : s.activeTargetMinutes ?? 30;
 
+    posthog.capture("activity_completed", {
+      duration_minutes: elapsedMinutes,
+      tracking_mode: s.activeTargetMinutes ? "quick" : "live",
+    });
     setState((x) => ({
       ...x,
       active: null,

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -52,6 +53,7 @@ const PRESET_MINUTES = [30, 45, 60] as const;
 function Start() {
   const s = useStore();
   const nav = useNavigate();
+  const posthog = usePostHog();
   const plans = ensureDefaultPlans(s.plans);
   const [step, setStep] = useState<"flower" | "activity">("flower");
   const [flower, setFlower] = useState(s.flower);
@@ -64,6 +66,9 @@ function Start() {
   const [replace, setReplace] = useState(false);
 
   const beginWorkout = (plan: WorkoutPlan) => {
+    posthog.capture("workout_started", {
+      exercise_count: plan.items.length,
+    });
     setState((x) => ({
       ...x,
       flower,
@@ -81,6 +86,10 @@ function Start() {
   const startLiveClass = () => {
     const activity = cls === "Other" ? custom.trim() : cls;
     if (!activity) return;
+    posthog.capture("activity_started", {
+      activity_category: cls ?? "Other",
+      tracking_mode: "live",
+    });
     setState((x) => ({
       ...x,
       flower,
@@ -98,6 +107,11 @@ function Start() {
     const activity = cls === "Other" ? custom.trim() : cls;
     if (!activity) return;
     const chosenMinutes = isCustomActive ? parseInt(customMinutes) || 45 : minutes;
+    posthog.capture("activity_started", {
+      activity_category: cls ?? "Other",
+      tracking_mode: "quick",
+      target_duration_minutes: chosenMinutes,
+    });
     setState((x) => ({
       ...x,
       flower,

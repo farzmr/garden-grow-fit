@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import { ArrowLeft, Check, Pause, Play, Sparkles, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FinishSessionModal } from "@/components/FinishSessionModal";
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/activity")({
 function ActivityTrackerPage() {
   const s = useStore();
   const nav = useNavigate();
+  const posthog = usePostHog();
   const [seconds, setSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showFinish, setShowFinish] = useState(false);
@@ -73,6 +75,10 @@ function ActivityTrackerPage() {
 
   const handleFinish = (details: { feelingEmoji?: string; notes?: string }) => {
     const completedAt = new Date().toISOString();
+    posthog.capture("activity_completed", {
+      duration_minutes: elapsedMinutes,
+      tracking_mode: "live",
+    });
     setState((x) => ({
       ...x,
       active: null,
@@ -107,6 +113,10 @@ function ActivityTrackerPage() {
   };
 
   const handleDiscard = () => {
+    posthog.capture("activity_discarded", {
+      duration_minutes: elapsedMinutes,
+      tracking_mode: "live",
+    });
     setState((x) => ({
       ...x,
       active: null,
