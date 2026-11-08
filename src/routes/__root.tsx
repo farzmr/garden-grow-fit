@@ -45,10 +45,10 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const posthog = usePostHog();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-    posthog.captureException(error, {
+    posthog?.captureException?.(error, {
       boundary: "tanstack_root_error_component",
     });
-    posthog.logger.error("root route error boundary rendered", {
+    posthog?.logger?.error?.("root route error boundary rendered", {
       boundary: "tanstack_root_error_component",
     });
   }, [error, posthog]);
@@ -119,11 +119,12 @@ function PostHogIdentity() {
   const identifiedAccountId = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!posthog) return;
     let active = true;
     let receivedAuthStateChange = false;
 
     const syncIdentity = (account: AuthAccount | null) => {
-      if (!active) return;
+      if (!active || !posthog) return;
 
       if (!account) {
         if (identifiedAccountId.current) {
@@ -168,10 +169,12 @@ function PostHogIdentity() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  const projectToken = import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"] as
-    | string
-    | undefined;
-  const posthogHost = import.meta.env["VITE_PUBLIC_POSTHOG_HOST"] as string | undefined;
+  const projectToken =
+    (import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"] as string | undefined) ||
+    "phc_rVYUkJtMt8LnjT5yANrynCFHK6ad5A4DTHQGTJyY92nB";
+  const posthogHost =
+    (import.meta.env["VITE_PUBLIC_POSTHOG_HOST"] as string | undefined) ||
+    "https://us.i.posthog.com";
   const document = (
     <html lang="en">
       <head>
@@ -186,11 +189,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
   if (!projectToken || !posthogHost) {
     if (typeof window !== "undefined" && import.meta.env.DEV) {
-      const variableName = projectToken
-        ? "VITE_PUBLIC_POSTHOG_HOST"
-        : "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN";
-      throw new Error(
-        `${variableName} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${variableName} is configured`,
+      console.warn(
+        "PostHog project token or host is missing; skipping analytics initialization.",
       );
     }
 

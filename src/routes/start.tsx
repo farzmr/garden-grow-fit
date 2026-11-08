@@ -66,7 +66,7 @@ function Start() {
   const [replace, setReplace] = useState(false);
 
   const beginWorkout = (plan: WorkoutPlan) => {
-    posthog.capture("workout_started", {
+    posthog?.capture?.("workout_started", {
       exercise_count: plan.items.length,
     });
     setState((x) => ({
@@ -86,7 +86,7 @@ function Start() {
   const startLiveClass = () => {
     const activity = cls === "Other" ? custom.trim() : cls;
     if (!activity) return;
-    posthog.capture("activity_started", {
+    posthog?.capture?.("activity_started", {
       activity_category: cls ?? "Other",
       tracking_mode: "live",
     });
@@ -107,7 +107,7 @@ function Start() {
     const activity = cls === "Other" ? custom.trim() : cls;
     if (!activity) return;
     const chosenMinutes = isCustomActive ? parseInt(customMinutes) || 45 : minutes;
-    posthog.capture("activity_started", {
+    posthog?.capture?.("activity_started", {
       activity_category: cls ?? "Other",
       tracking_mode: "quick",
       target_duration_minutes: chosenMinutes,

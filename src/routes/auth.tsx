@@ -81,7 +81,7 @@ function Auth() {
       setNote({ kind: "error", text: result.error });
       return;
     }
-    posthog.capture(mode === "in" ? "user_signed_in" : "account_created", {
+    posthog?.capture?.(mode === "in" ? "user_signed_in" : "account_created", {
       authentication_method: "password",
     });
     if (result.needsConfirmation) {

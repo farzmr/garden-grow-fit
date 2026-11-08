@@ -51,7 +51,7 @@ function ProfilePage() {
     if (res.error) {
       setError(res.error);
     } else {
-      posthog.capture("profile_updated");
+      posthog?.capture?.("profile_updated");
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       const updated = await currentAccount();
@@ -60,7 +60,7 @@ function ProfilePage() {
   };
 
   const handleSignOut = async () => {
-    posthog.capture("user_signed_out");
+    posthog?.capture?.("user_signed_out");
     await signOut();
     void nav({ to: "/auth", replace: true });
   };

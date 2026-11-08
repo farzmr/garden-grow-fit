@@ -75,7 +75,7 @@ function ActivityTrackerPage() {
 
   const handleFinish = (details: { feelingEmoji?: string; notes?: string }) => {
     const completedAt = new Date().toISOString();
-    posthog.capture("activity_completed", {
+    posthog?.capture?.("activity_completed", {
       duration_minutes: elapsedMinutes,
       tracking_mode: "live",
     });
@@ -113,7 +113,7 @@ function ActivityTrackerPage() {
   };
 
   const handleDiscard = () => {
-    posthog.capture("activity_discarded", {
+    posthog?.capture?.("activity_discarded", {
       duration_minutes: elapsedMinutes,
       tracking_mode: "live",
     });

@@ -221,7 +221,7 @@ function Workout() {
 
   const handleUpdatePlan = () => {
     if (originalPlan) {
-      posthog.capture("workout_plan_updated", {
+      posthog?.capture?.("workout_plan_updated", {
         added_exercise_count: addedExercises.length,
         removed_exercise_count: removedExercises.length,
       });
@@ -259,7 +259,7 @@ function Workout() {
 
   const handleSaveAsNewPlan = (newPlanName: string) => {
     if (originalPlan) {
-      posthog.capture("workout_plan_saved", {
+      posthog?.capture?.("workout_plan_saved", {
         exercise_count: list.length,
       });
       const newPlan: WorkoutPlan = {
@@ -305,7 +305,7 @@ function Workout() {
     const minutes = s.activeStartedAt
       ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
       : undefined;
-    posthog.capture("workout_completed", {
+    posthog?.capture?.("workout_completed", {
       completed_exercise_count: list.filter((exercise) => exercise.sets.some((set) => set.done)).length,
       completed_set_count: done,
       duration_minutes: minutes,

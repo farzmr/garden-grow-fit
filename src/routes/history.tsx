@@ -94,7 +94,7 @@ function SessionDetails({session,close}:{session:Session;close:()=>void}){
             aria-label="Delete session"
             className="text-muted-foreground hover:text-destructive"
             onClick={() => {
-              posthog.capture("session_deleted", {
+              posthog?.capture?.("session_deleted", {
                 exercise_count: session.exercises.length,
                 duration_minutes: session.minutes,
               });

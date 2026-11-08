@@ -128,7 +128,7 @@ function Home() {
       ? Math.max(1, Math.round((Date.now() - new Date(s.activeStartedAt).getTime()) / 60000))
       : s.activeTargetMinutes ?? 30;
 
-    posthog.capture("activity_completed", {
+    posthog?.capture?.("activity_completed", {
       duration_minutes: elapsedMinutes,
       tracking_mode: s.activeTargetMinutes ? "quick" : "live",
     });
