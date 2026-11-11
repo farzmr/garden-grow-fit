@@ -1,8 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const url = import.meta.env["VITE_SUPABASE_URL"] as string | undefined;
-const key = (import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
-  import.meta.env["VITE_SUPABASE_ANON_KEY"]) as string | undefined;
+const DEFAULT_SUPABASE_URL = "https://qjcybjhhigeltswneylh.supabase.co";
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_0_ik1Mb84ol66dOUUAchEw_7RO71DcX";
+
+const url = (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) || DEFAULT_SUPABASE_URL;
+const key =
+  ((import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ??
+    import.meta.env["VITE_SUPABASE_ANON_KEY"]) as string | undefined) ||
+  DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
 let client: SupabaseClient | null = null;
 
