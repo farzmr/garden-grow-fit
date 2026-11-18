@@ -139,6 +139,19 @@ describe("merging the backup with this device", () => {
     expect(merged.activeStartedAt).toBeUndefined();
   });
 
+  it("preserves unsynced local custom plans while merging remote backup", () => {
+    const localWithCustom: State = {
+      ...base,
+      plans: [
+        ...base.plans,
+        { id: "local-custom-1", name: "My New Routine", items: [], difficulty: "Intermediate" },
+      ],
+    };
+    const merged = mergeRemote(localWithCustom, remote);
+    expect(merged.plans.some((p) => p.id === "local-custom-1")).toBe(true);
+    expect(merged.plans.some((p) => p.id === "p1")).toBe(true);
+  });
+
   it("restores an unfinished workout with the flower and plan it started with", () => {
     const merged = mergeRemote(base, {
       ...remote,

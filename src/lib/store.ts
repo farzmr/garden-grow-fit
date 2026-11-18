@@ -1116,12 +1116,12 @@ export function ensureDefaultPlans(plans?: WorkoutPlan[] | null): WorkoutPlan[] 
     });
   }
 
-  // 2. Append any custom plans created by the user
+  // 2. Append any custom plans created by the user (deduplicating by id)
   for (const p of existing) {
     const isDefault = DEFAULT_PLANS.some(
       (def) => def.id === p.id || def.name.trim().toLowerCase() === p.name.trim().toLowerCase()
     );
-    if (!isDefault) {
+    if (!isDefault && !result.some((r) => r.id === p.id)) {
       result.push({
         ...p,
         items: ensureMandatoryCoolDowns(p.items),

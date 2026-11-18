@@ -23,6 +23,7 @@ import {
   type CardioSettingConfig,
   type Exercise,
   type ExerciseInfo,
+  type PlanItem,
   type WeightUnit,
   type WorkoutPlan,
 } from "@/lib/store";
@@ -77,6 +78,31 @@ function formatExerciseSummary(ex: Exercise, info?: ExerciseInfo) {
   return `${ex.sets.length} ${ex.sets.length === 1 ? "set" : "sets"} completed · ${maxW} ${weightUnit} × ${maxR} reps`;
 }
 
+function buildPlanItemsFromWorkout(list: Exercise[], originalPlan?: WorkoutPlan): PlanItem[] {
+  return list.map((ex) => {
+    const existing = originalPlan?.items.find((it) => it.name === ex.name);
+    const exInfo = imageFor(ex.name);
+    const isDur = exInfo?.trackingType === "duration";
+    const targetSet = ex.sets.find((set) => set.done) ?? ex.sets[0];
+
+    const sets =
+      ex.sets.length > 0 ? ex.sets.length : (existing?.sets || (exInfo?.category === "Cardio" ? 1 : 3));
+    const reps = isDur ? 1 : (targetSet?.reps ?? existing?.reps ?? 10);
+    const weight = targetSet?.weight ?? existing?.weight ?? 0;
+    const time = isDur
+      ? (targetSet?.time ?? existing?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60))
+      : undefined;
+
+    return {
+      name: ex.name,
+      sets,
+      reps,
+      weight,
+      ...(time !== undefined ? { time } : {}),
+    };
+  });
+}
+
 function Workout() {
   const s = useStore();
   const nav = useNavigate();
@@ -129,7 +155,26 @@ function Workout() {
   const removedExercises = originalPlan
     ? origExerciseNames.filter((name) => !currentExerciseNames.includes(name))
     : [];
-  const hasPlanChanges = Boolean(originalPlan && (addedExercises.length > 0 || removedExercises.length > 0));
+  const modifiedExercises = originalPlan
+    ? list
+        .filter((ex) => {
+          if (!origExerciseNames.includes(ex.name)) return false;
+          const orig = originalPlan.items.find((it) => it.name === ex.name);
+          if (!orig) return false;
+          if (ex.sets.length !== orig.sets) return true;
+          const targetSet = ex.sets.find((set) => set.done) ?? ex.sets[0];
+          if (!targetSet) return false;
+          if (targetSet.weight !== undefined && targetSet.weight !== orig.weight) return true;
+          if (targetSet.reps !== undefined && targetSet.reps !== orig.reps) return true;
+          if (targetSet.time !== undefined && orig.time !== undefined && targetSet.time !== orig.time) return true;
+          return false;
+        })
+        .map((ex) => ex.name)
+    : [];
+  const hasPlanChanges = Boolean(
+    originalPlan &&
+      (addedExercises.length > 0 || removedExercises.length > 0 || modifiedExercises.length > 0)
+  );
 
   const add = (name: string) => {
     if (!name.trim()) return;
@@ -227,34 +272,14 @@ function Workout() {
       });
       const updatedPlan: WorkoutPlan = {
         ...originalPlan,
-        items: list.map((ex) => {
-          const existing = originalPlan.items.find((it) => it.name === ex.name);
-          if (existing) {
-            return {
-              ...existing,
-              sets: ex.sets.length > 0 ? ex.sets.length : existing.sets,
-            };
-          }
-          const exInfo = imageFor(ex.name);
-          const isDur = exInfo?.trackingType === "duration";
-          return {
-            name: ex.name,
-            sets: ex.sets.length || (exInfo?.category === "Cardio" ? 1 : 3),
-            reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
-            weight: ex.sets[0]?.weight || 10,
-            ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
-          };
-        }),
+        items: buildPlanItemsFromWorkout(list, originalPlan),
       };
-      setState((x) => ({
-        ...x,
-        plans: (x.plans.length ? x.plans : DEFAULT_PLANS).map((p) =>
-          p.id === updatedPlan.id ? updatedPlan : p
-        ),
-      }));
+      setShowPlanUpdateModal(false);
+      completeFinish(pendingFinishDetails, { updatedPlan });
+    } else {
+      setShowPlanUpdateModal(false);
+      completeFinish(pendingFinishDetails);
     }
-    setShowPlanUpdateModal(false);
-    completeFinish(pendingFinishDetails);
   };
 
   const handleSaveAsNewPlan = (newPlanName: string) => {
@@ -266,32 +291,14 @@ function Workout() {
         id: uid(),
         name: newPlanName.trim() || `${originalPlan.name} (Updated)`,
         difficulty: originalPlan.difficulty ?? "Intermediate",
-        items: list.map((ex) => {
-          const existing = originalPlan.items.find((it) => it.name === ex.name);
-          if (existing) {
-            return {
-              ...existing,
-              sets: ex.sets.length > 0 ? ex.sets.length : existing.sets,
-            };
-          }
-          const exInfo = imageFor(ex.name);
-          const isDur = exInfo?.trackingType === "duration";
-          return {
-            name: ex.name,
-            sets: ex.sets.length || (exInfo?.category === "Cardio" ? 1 : 3),
-            reps: isDur ? 1 : (ex.sets[0]?.reps || 10),
-            weight: ex.sets[0]?.weight || 10,
-            ...(isDur ? { time: ex.sets[0]?.time ?? (exInfo?.timeUnit === "min" ? 20 : 60) } : {}),
-          };
-        }),
+        items: buildPlanItemsFromWorkout(list, originalPlan),
       };
-      setState((x) => ({
-        ...x,
-        plans: [...(x.plans.length ? x.plans : DEFAULT_PLANS), newPlan],
-      }));
+      setShowPlanUpdateModal(false);
+      completeFinish(pendingFinishDetails, { newPlan });
+    } else {
+      setShowPlanUpdateModal(false);
+      completeFinish(pendingFinishDetails);
     }
-    setShowPlanUpdateModal(false);
-    completeFinish(pendingFinishDetails);
   };
 
   const handleDiscardChanges = () => {
@@ -299,7 +306,10 @@ function Workout() {
     completeFinish(pendingFinishDetails);
   };
 
-  const completeFinish = (details?: { feelingEmoji?: string; notes?: string }) => {
+  const completeFinish = (
+    details?: { feelingEmoji?: string; notes?: string },
+    planAction?: { updatedPlan?: WorkoutPlan; newPlan?: WorkoutPlan }
+  ) => {
     const completedAt = new Date().toISOString();
     const plantedFlower = s.activeFlower ?? s.flower;
     const minutes = s.activeStartedAt
@@ -310,41 +320,60 @@ function Workout() {
       completed_set_count: done,
       duration_minutes: minutes,
     });
-    setState((x) => ({
-      ...x,
-      active: null,
-      activeStartedAt: undefined,
-      activeFlower: undefined,
-      activePlanName: undefined,
-      activePlanId: undefined,
-      activeActivity: undefined,
-      activeLocation: undefined,
-      activeIntensity: undefined,
-      sessions: [
-        ...x.sessions,
-        {
-          id: uid(),
-          date: today(),
-          completedAt,
-          planId: x.activePlanId,
-          planName: x.activePlanName,
-          minutes,
-          location: x.activeLocation,
-          feelingEmoji: details?.feelingEmoji,
-          notes: details?.notes,
-          activity: "Workout",
-          exercises: list
-            .map((e) => ({
-              ...e,
-              weightUnit: e.weightUnit ?? "lb",
-              sets: e.sets.filter((z) => z.done),
-            }))
-            .filter((e) => e.sets.length),
-          flower: plantedFlower,
-          gardenId: x.mainGarden,
-        },
-      ],
-    }));
+    setState((x) => {
+      let nextPlans = ensureDefaultPlans(x.plans);
+      let sessionPlanId = x.activePlanId;
+      let sessionPlanName = x.activePlanName;
+
+      if (planAction?.updatedPlan) {
+        nextPlans = nextPlans.map((p) =>
+          p.id === planAction.updatedPlan!.id ? planAction.updatedPlan! : p
+        );
+        sessionPlanId = planAction.updatedPlan.id;
+        sessionPlanName = planAction.updatedPlan.name;
+      } else if (planAction?.newPlan) {
+        nextPlans = [...nextPlans, planAction.newPlan];
+        sessionPlanId = planAction.newPlan.id;
+        sessionPlanName = planAction.newPlan.name;
+      }
+
+      return {
+        ...x,
+        plans: nextPlans,
+        active: null,
+        activeStartedAt: undefined,
+        activeFlower: undefined,
+        activePlanName: undefined,
+        activePlanId: undefined,
+        activeActivity: undefined,
+        activeLocation: undefined,
+        activeIntensity: undefined,
+        sessions: [
+          ...x.sessions,
+          {
+            id: uid(),
+            date: today(),
+            completedAt,
+            planId: sessionPlanId,
+            planName: sessionPlanName,
+            minutes,
+            location: x.activeLocation,
+            feelingEmoji: details?.feelingEmoji,
+            notes: details?.notes,
+            activity: "Workout",
+            exercises: list
+              .map((e) => ({
+                ...e,
+                weightUnit: e.weightUnit ?? "lb",
+                sets: e.sets.filter((z) => z.done),
+              }))
+              .filter((e) => e.sets.length),
+            flower: plantedFlower,
+            gardenId: x.mainGarden,
+          },
+        ],
+      };
+    });
     setFinishedFlower(plantedFlower);
     setPlanted(true);
     setTimeout(() => nav({ to: "/" }), 1600);
@@ -941,6 +970,7 @@ function Workout() {
         planName={originalPlan?.name ?? "Workout Plan"}
         addedExercises={addedExercises}
         removedExercises={removedExercises}
+        modifiedExercises={modifiedExercises}
         onUpdatePlan={handleUpdatePlan}
         onSaveAsNewPlan={handleSaveAsNewPlan}
         onDiscardChanges={handleDiscardChanges}

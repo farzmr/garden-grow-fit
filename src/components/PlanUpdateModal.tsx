@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, BookmarkPlus, RefreshCw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,6 +7,7 @@ export function PlanUpdateModal({
   planName,
   addedExercises,
   removedExercises,
+  modifiedExercises = [],
   onUpdatePlan,
   onSaveAsNewPlan,
   onDiscardChanges,
@@ -15,12 +16,20 @@ export function PlanUpdateModal({
   planName: string;
   addedExercises: string[];
   removedExercises: string[];
+  modifiedExercises?: string[];
   onUpdatePlan: () => void;
   onSaveAsNewPlan: (newPlanName: string) => void;
   onDiscardChanges: () => void;
 }) {
   const [isNamingNew, setIsNamingNew] = useState(false);
   const [newPlanName, setNewPlanName] = useState(`${planName} (Updated)`);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsNamingNew(false);
+      setNewPlanName(`${planName} (Updated)`);
+    }
+  }, [isOpen, planName]);
 
   if (!isOpen) return null;
 
@@ -57,6 +66,17 @@ export function PlanUpdateModal({
               </span>
               <span className="text-foreground font-medium pt-0.5 leading-tight">
                 {removedExercises.join(", ")}
+              </span>
+            </div>
+          )}
+
+          {modifiedExercises.length > 0 && (
+            <div className="flex items-start gap-2">
+              <span className="inline-flex items-center gap-0.5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-400 font-bold px-1.5 py-0.5 shrink-0 text-[11px]">
+                <RefreshCw className="h-3 w-3 stroke-[2.5]" /> Updated
+              </span>
+              <span className="text-foreground font-medium pt-0.5 leading-tight">
+                {modifiedExercises.join(", ")}
               </span>
             </div>
           )}

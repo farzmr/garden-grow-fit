@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { onAccountChange, type AuthAccount } from "@/lib/auth";
 import { getSupabase } from "@/integrations/supabase/client";
 import {
+  DEFAULT_PLANS,
   applyRemoteState,
   ensureDefaultPlans,
   readState,
@@ -240,16 +241,20 @@ export function isEmptyServer(data: Pick<ServerData, "sessions" | "plans" | "act
   return data.sessions.length === 0 && data.plans.length === 0 && !data.active;
 }
 
-/** Local samples stay device-only; everything else the server holds wins. */
+/** Local samples stay device-only; everything else the server holds wins, while preserving unsynced local custom plans. */
 export function mergeRemote(local: State, remote: ServerData): State {
   const samples = local.sessions.filter((s) => s.sample);
   const active = remote.active;
+  const remotePlanIds = new Set(remote.plans.map((p) => p.id));
+  const localExtraPlans = (local.plans ?? []).filter(
+    (p) => !remotePlanIds.has(p.id) && !DEFAULT_PLANS.some((def) => def.id === p.id)
+  );
   return {
     ...local,
     flower: remote.flower || local.flower,
     mainGarden: remote.mainGarden ?? local.mainGarden,
     sessions: [...samples, ...remote.sessions],
-    plans: ensureDefaultPlans(remote.plans),
+    plans: ensureDefaultPlans([...remote.plans, ...localExtraPlans]),
     active: active ? parseExercises(active.exercises) : null,
     activeStartedAt: active?.started_at ?? undefined,
     activeFlower: active?.flower ?? undefined,
@@ -333,7 +338,7 @@ async function push(account: AuthAccount, state: State): Promise<boolean> {
       : Promise.resolve({ error: null }),
     removeMissing("sessions", personal.map((s) => s.id), account.id),
     state.plans.length
-      ? sb.from("plans").upsert(state.plans.map((plan, i) => planRow(plan, account.id, i)), { onConflict: "id" })
+      ? sb.from("plans").upsert(state.plans.map((plan, i) => planRow(plan, account.id, i)), { onConflict: "user_id, id" })
       : Promise.resolve({ error: null }),
     removeMissing("plans", state.plans.map((plan) => plan.id), account.id),
     sb

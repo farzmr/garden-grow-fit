@@ -227,7 +227,7 @@ function Plans() {
             posthog?.capture?.("workout_plan_deleted", {
               exercise_count: current.items.length,
             });
-            setState(x => ({ ...x, plans: x.plans.filter(p => p.id !== current.id) }));
+            setState(x => ({ ...x, plans: ensureDefaultPlans(x.plans).filter(p => p.id !== current.id) }));
             setSelected(null);
           }}
         >
